@@ -1,5 +1,5 @@
 import { asc, eq, and, lte, gte, sql } from "drizzle-orm";
-import { db } from "./db";
+import { getDb } from "./db";
 import { decks, cards, notes, reviews } from "./db/schema";
 import type { NoteFields, NoteType } from "./types";
 import { serializeDeck, noteSummary } from "./serialize";
@@ -13,6 +13,7 @@ export interface DeckOverview {
 }
 
 export async function getDecksOverview(now: number = Date.now()): Promise<DeckOverview[]> {
+  const db = await getDb();
   const deckRows = await db.select().from(decks).orderBy(asc(decks.createdAt));
   const counts = await db
     .select({
@@ -59,6 +60,7 @@ export async function getDueQueue(
   deckId?: string,
   limit = 200,
 ): Promise<QueueCard[]> {
+  const db = await getDb();
   const rows = await db
     .select({
       cardId: cards.id,
@@ -117,6 +119,7 @@ function dayKey(ms: number): string {
 }
 
 export async function getStreak(now: number = Date.now()): Promise<number> {
+  const db = await getDb();
   const rows = await db.select({ reviewedAt: reviews.reviewedAt }).from(reviews);
   if (rows.length === 0) return 0;
   const days = new Set(rows.map((r) => dayKey(r.reviewedAt)));
@@ -135,6 +138,7 @@ export async function getStreak(now: number = Date.now()): Promise<number> {
 }
 
 export async function getReviewedTodayCount(now: number = Date.now()): Promise<number> {
+  const db = await getDb();
   const start = new Date(now);
   start.setHours(0, 0, 0, 0);
   const rows = await db
@@ -159,6 +163,7 @@ export async function getDeckDetail(
   deckId: string,
   now: number = Date.now(),
 ): Promise<DeckDetail | null> {
+  const db = await getDb();
   const d = (await db.select().from(decks).where(eq(decks.id, deckId)).limit(1))[0];
   if (!d) return null;
 

@@ -1,6 +1,6 @@
 import { randomUUID, createHash } from "node:crypto";
 import { eq, inArray, asc } from "drizzle-orm";
-import { db } from "./db";
+import { getDb } from "./db";
 import { decks, notes, cards, reviews } from "./db/schema";
 import { parseDeck } from "./markdown";
 import { cardKinds } from "./cards";
@@ -58,6 +58,7 @@ export function noteHash(type: NoteType, fields: NoteFields): string {
 }
 
 async function insertNote(deckId: string, note: ParsedNote, now: number): Promise<number> {
+  const db = await getDb();
   const noteId = randomUUID();
   await db.insert(notes).values({
     id: noteId,
@@ -84,6 +85,7 @@ async function insertNote(deckId: string, note: ParsedNote, now: number): Promis
 }
 
 async function deleteNotes(noteIds: string[]): Promise<void> {
+  const db = await getDb();
   for (const batch of chunk(noteIds)) {
     const cardRows = await db
       .select({ id: cards.id })
@@ -100,6 +102,7 @@ async function deleteNotes(noteIds: string[]): Promise<void> {
 
 /** Current deck content as importable markdown (what the editor should show). */
 async function serializeCurrentDeck(deckId: string): Promise<string> {
+  const db = await getDb();
   const d = (await db.select().from(decks).where(eq(decks.id, deckId)).limit(1))[0];
   const noteRows = await db
     .select()
@@ -114,6 +117,7 @@ async function serializeCurrentDeck(deckId: string): Promise<string> {
 
 /** Create a brand-new deck from markdown. */
 export async function insertDeck(markdown: string): Promise<InsertResult> {
+  const db = await getDb();
   const deck = parseDeck(markdown);
   if (deck.notes.length === 0) {
     return { ok: false, error: "No cards found — check the Q:/A:, cloze, or vocab format." };
@@ -148,6 +152,7 @@ export async function appendToDeck(
 ): Promise<
   { ok: true; added: number; skipped: number; markdown: string } | { ok: false; error: string }
 > {
+  const db = await getDb();
   const deckRow = (await db.select().from(decks).where(eq(decks.id, deckId)).limit(1))[0];
   if (!deckRow) return { ok: false, error: "Deck not found." };
 
@@ -186,6 +191,7 @@ export async function replaceDeckContent(
   | { ok: true; added: number; removed: number; kept: number; markdown: string }
   | { ok: false; error: string }
 > {
+  const db = await getDb();
   const deckRow = (await db.select().from(decks).where(eq(decks.id, deckId)).limit(1))[0];
   if (!deckRow) return { ok: false, error: "Deck not found." };
 
@@ -236,6 +242,7 @@ export async function replaceDeckContent(
 
 /** Delete a deck and everything under it (notes, cards, review history). */
 export async function deleteDeck(deckId: string): Promise<void> {
+  const db = await getDb();
   const cardRows = await db
     .select({ id: cards.id })
     .from(cards)

@@ -9,7 +9,7 @@ Anki now ships.
 ## Stack
 
 - **Next.js 16** (App Router) — deploys to Vercel as one app
-- **Drizzle ORM** + **libSQL/SQLite** — local file in dev, [Turso](https://turso.tech) in prod
+- **Drizzle ORM** + **Postgres** — embedded [PGlite](https://pglite.dev) in dev, [Neon](https://neon.tech) in prod
 - **ts-fsrs** — spaced-repetition scheduling
 - **Tailwind v4** — installable PWA, mobile-first, dark mode
 
@@ -17,13 +17,12 @@ Anki now ships.
 
 ```bash
 pnpm install
-pnpm db:push     # create tables in ./local.db
-pnpm seed        # load the example decks in seed/*.md
+pnpm seed        # load the example decks (creates the local db automatically)
 pnpm dev         # http://localhost:3210
 ```
 
-No environment variables are needed locally — the app uses a SQLite file at
-`./local.db` automatically.
+No environment variables are needed locally — the app runs an embedded Postgres
+(PGlite) with data in `./.local-pg`, and applies the schema automatically.
 
 ## Deck markdown format
 
@@ -72,10 +71,12 @@ an LLM: *"Turn this chapter into a deck using this exact markdown format."*
 
 ## Deploy to Vercel
 
-1. Create a Turso database and copy its URL + auth token (see `.env.example`).
-2. Import the repo into Vercel; add `DATABASE_URL` and `DATABASE_AUTH_TOKEN` as env vars.
-3. Run `pnpm db:push` once against the Turso URL to create the tables.
-4. Deploy. Install it to your iPhone home screen via Share → Add to Home Screen.
+1. Import the repo at [vercel.com/new](https://vercel.com/new).
+2. Add **Neon Postgres** from the project's **Storage** tab — Vercel sets the
+   `DATABASE_URL` env var for you.
+3. Create the tables once against that database (e.g. from your machine):
+   `DATABASE_URL="postgres://…" pnpm db:push`  (optionally `pnpm seed` too).
+4. Deploy. Install it on your iPhone via Share → Add to Home Screen.
 
 ## Project layout
 
@@ -84,7 +85,7 @@ app/            routes: / (today), /review, /import, /decks, /stats
   components/   BottomNav, ReviewSession, icons
   actions.ts    server actions: importDeck, submitReview
 lib/
-  db/           Drizzle schema + libSQL client
+  db/           Drizzle schema + Postgres client (Neon / PGlite)
   markdown.ts   deck markdown parser
   cards.ts      note → cards expansion + rendering
   fsrs.ts       FSRS wrapper (scheduling + previews)

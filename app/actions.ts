@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { db } from "@/lib/db";
+import { getDb } from "@/lib/db";
 import { cards, reviews } from "@/lib/db/schema";
 import {
   insertDeck,
@@ -80,6 +80,7 @@ export async function submitReviewAction(
   const grade = z.number().int().min(1).max(4).safeParse(rating);
   if (!grade.success) return { ok: false };
 
+  const db = await getDb();
   const now = Date.now();
   const rows = await db.select().from(cards).where(eq(cards.id, cardId)).limit(1);
   const row = rows[0];

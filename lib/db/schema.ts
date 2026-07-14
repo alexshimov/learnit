@@ -1,27 +1,31 @@
-import { sqliteTable, text, integer, real, index } from "drizzle-orm/sqlite-core";
+import { pgTable, text, integer, real, bigint, jsonb, index } from "drizzle-orm/pg-core";
 import type { NoteFields, NoteType } from "../types";
 
-export const decks = sqliteTable("decks", {
+// Millisecond epoch timestamps must be bigint — a Postgres `integer` is 32-bit
+// and would overflow Date.now() (~1.7e12).
+const ts = (name: string) => bigint(name, { mode: "number" });
+
+export const decks = pgTable("decks", {
   id: text("id").primaryKey(),
   title: text("title").notNull(),
   topic: text("topic"),
-  tags: text("tags", { mode: "json" }).$type<string[]>().notNull().default([]),
-  createdAt: integer("created_at").notNull(),
+  tags: jsonb("tags").$type<string[]>().notNull().default([]),
+  createdAt: ts("created_at").notNull(),
 });
 
-export const notes = sqliteTable("notes", {
+export const notes = pgTable("notes", {
   id: text("id").primaryKey(),
   deckId: text("deck_id")
     .notNull()
     .references(() => decks.id, { onDelete: "cascade" }),
   type: text("type").$type<NoteType>().notNull(),
-  fields: text("fields", { mode: "json" }).$type<NoteFields>().notNull(),
-  tags: text("tags", { mode: "json" }).$type<string[]>().notNull().default([]),
+  fields: jsonb("fields").$type<NoteFields>().notNull(),
+  tags: jsonb("tags").$type<string[]>().notNull().default([]),
   source: text("source"),
-  createdAt: integer("created_at").notNull(),
+  createdAt: ts("created_at").notNull(),
 });
 
-export const cards = sqliteTable(
+export const cards = pgTable(
   "cards",
   {
     id: text("id").primaryKey(),
@@ -33,7 +37,7 @@ export const cards = sqliteTable(
       .references(() => decks.id, { onDelete: "cascade" }),
     kind: text("kind").notNull(),
     // FSRS scheduling state
-    due: integer("due").notNull(),
+    due: ts("due").notNull(),
     stability: real("stability").notNull().default(0),
     difficulty: real("difficulty").notNull().default(0),
     elapsedDays: real("elapsed_days").notNull().default(0),
@@ -42,13 +46,13 @@ export const cards = sqliteTable(
     reps: integer("reps").notNull().default(0),
     lapses: integer("lapses").notNull().default(0),
     state: integer("state").notNull().default(0),
-    lastReview: integer("last_review"),
-    createdAt: integer("created_at").notNull(),
+    lastReview: ts("last_review"),
+    createdAt: ts("created_at").notNull(),
   },
   (t) => [index("cards_due_idx").on(t.due), index("cards_deck_idx").on(t.deckId)],
 );
 
-export const reviews = sqliteTable("reviews", {
+export const reviews = pgTable("reviews", {
   id: text("id").primaryKey(),
   cardId: text("card_id")
     .notNull()
@@ -58,7 +62,7 @@ export const reviews = sqliteTable("reviews", {
   stability: real("stability").notNull(),
   difficulty: real("difficulty").notNull(),
   scheduledDays: real("scheduled_days").notNull(),
-  reviewedAt: integer("reviewed_at").notNull(),
+  reviewedAt: ts("reviewed_at").notNull(),
 });
 
 export type DeckRow = typeof decks.$inferSelect;
