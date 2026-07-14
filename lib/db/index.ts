@@ -15,6 +15,14 @@ async function create(): Promise<DB> {
     return drizzle(neon(url), { schema });
   }
 
+  // No connection string. PGlite (below) is for local dev only — it writes to
+  // disk, which fails on a read-only serverless host. Fail clearly instead.
+  if (process.env.VERCEL || process.env.NODE_ENV === "production") {
+    throw new Error(
+      "DATABASE_URL is not set. Connect a Postgres database — in Vercel, add Neon from the project's Storage tab (it sets DATABASE_URL automatically).",
+    );
+  }
+
   // Local dev: embedded Postgres (PGlite) — no server to install, data persists
   // in ./.local-pg, schema applied automatically from ./drizzle migrations.
   const { PGlite } = await import("@electric-sql/pglite");
