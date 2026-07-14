@@ -3,13 +3,20 @@
 import { useRef, useState, useTransition, type ChangeEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Play, Upload, Trash } from "@/app/components/icons";
+import { ArrowLeft, Play, Upload, Trash, ChevronDown } from "@/app/components/icons";
+import { CardFace } from "@/app/components/card-face";
 import type { DeckDetail } from "@/lib/queries";
 import {
   saveDeckContentAction,
   appendDeckFromMarkdownAction,
   deleteDeckAction,
 } from "@/app/actions";
+
+function kindLabel(kind: string): string {
+  if (kind === "reverse") return "Back → front";
+  if (kind.startsWith("cloze:")) return `Cloze ${kind.split(":")[1]}`;
+  return "Front → back";
+}
 
 export function DeckManager({ detail }: { detail: DeckDetail }) {
   const router = useRouter();
@@ -149,27 +156,30 @@ export function DeckManager({ detail }: { detail: DeckDetail }) {
 
       <section className="flex flex-col gap-2">
         <div className="eyebrow2">Cards ({detail.items.length})</div>
+        <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>
+          Tap a card to preview it as it appears in review.
+        </p>
         <div className="card overflow-hidden">
           {detail.items.map((it, i) => (
-            <div
-              key={i}
-              className="flex items-center gap-3 px-3.5 py-2.5"
-              style={{ borderTop: i === 0 ? "none" : "0.5px solid var(--border)" }}
-            >
-              <span
-                className="shrink-0 text-[10px] uppercase"
-                style={{
-                  fontFamily: "var(--font-sp-mono), monospace",
-                  color: "var(--text-muted)",
-                  width: 42,
-                }}
-              >
-                {it.type}
-              </span>
-              <span className="truncate text-[13px]" style={{ color: "var(--text-secondary)" }}>
-                {it.summary}
-              </span>
-            </div>
+            <details key={i} className="deck-card-row">
+              <summary>
+                <span className="type-badge">{it.noteType}</span>
+                <span className="truncate text-[13px]" style={{ color: "var(--text-secondary)" }}>
+                  {it.summary}
+                </span>
+                <ChevronDown size={16} className="chev" />
+              </summary>
+              <div className="card-preview px-4 pb-4">
+                {it.kinds.map((kind, k) => (
+                  <div key={k}>
+                    {it.kinds.length > 1 && (
+                      <div className="eyebrow2 mb-3 mt-5">{kindLabel(kind)}</div>
+                    )}
+                    <CardFace noteType={it.noteType} fields={it.fields} kind={kind} />
+                  </div>
+                ))}
+              </div>
+            </details>
           ))}
         </div>
       </section>

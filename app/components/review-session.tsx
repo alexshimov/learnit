@@ -4,10 +4,7 @@ import { useCallback, useEffect, useMemo, useState, useTransition } from "react"
 import Link from "next/link";
 import { X, Check } from "@/app/components/icons";
 import type { QueueCard } from "@/lib/queries";
-import { renderCard } from "@/lib/cards";
-import { CardContent } from "@/app/components/card-content";
-import { VocabBack } from "@/app/components/vocab-card";
-import type { VocabFields } from "@/lib/types";
+import { CardFace } from "@/app/components/card-face";
 import { previewIntervals, intervalLabel, Rating } from "@/lib/fsrs";
 import { submitReviewAction } from "@/app/actions";
 
@@ -25,15 +22,6 @@ export function ReviewSession({ queue }: { queue: QueueCard[] }) {
   const [isPending, startTransition] = useTransition();
 
   const current = queue[index];
-  const isVocab = current?.noteType === "vocab";
-
-  const face = useMemo(
-    () =>
-      current && current.noteType !== "vocab"
-        ? renderCard(current.noteType, current.fields, current.kind)
-        : null,
-    [current],
-  );
   const previews = useMemo(
     () => (current ? previewIntervals(current.sched, Date.now()) : null),
     [current],
@@ -118,21 +106,12 @@ export function ReviewSession({ queue }: { queue: QueueCard[] }) {
 
       <div className="flex flex-1 flex-col">
         <div className="eyebrow2 mb-6">{current.deckTitle}</div>
-        <div className="q-prompt">
-          {isVocab ? (current.fields as VocabFields).ru : <CardContent text={face!.front} />}
-        </div>
-        {revealed && (
-          <>
-            <div className="my-7 border-t" style={{ borderColor: "var(--border)" }} />
-            {isVocab ? (
-              <VocabBack fields={current.fields as VocabFields} />
-            ) : (
-              <div className="voice">
-                <CardContent text={face!.back} />
-              </div>
-            )}
-          </>
-        )}
+        <CardFace
+          noteType={current.noteType}
+          fields={current.fields}
+          kind={current.kind}
+          showBack={revealed}
+        />
       </div>
 
       <div className="mt-8">

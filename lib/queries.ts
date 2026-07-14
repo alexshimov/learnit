@@ -3,6 +3,7 @@ import { getDb } from "./db";
 import { decks, cards, notes, reviews } from "./db/schema";
 import type { NoteFields, NoteType } from "./types";
 import { serializeDeck, noteSummary } from "./serialize";
+import { cardKinds } from "./cards";
 
 export interface DeckOverview {
   id: string;
@@ -156,7 +157,7 @@ export interface DeckDetail {
   total: number;
   due: number;
   markdown: string;
-  items: { summary: string; type: NoteType }[];
+  items: { noteType: NoteType; fields: NoteFields; kinds: string[]; summary: string }[];
 }
 
 export async function getDeckDetail(
@@ -187,6 +188,11 @@ export async function getDeckDetail(
     total: cardRows.length,
     due: cardRows.filter((c) => c.due <= now).length,
     markdown: serializeDeck({ title: d.title, topic: d.topic, tags: d.tags }, notesLite),
-    items: notesLite.map((n) => ({ summary: noteSummary(n.type, n.fields), type: n.type })),
+    items: notesLite.map((n) => ({
+      noteType: n.type,
+      fields: n.fields,
+      kinds: cardKinds({ type: n.type, fields: n.fields, tags: n.tags }),
+      summary: noteSummary(n.type, n.fields),
+    })),
   };
 }

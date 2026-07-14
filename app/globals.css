@@ -415,3 +415,59 @@
     border-color: var(--brand-line);
     color: var(--brand);
   }
+
+  /* deck card preview (expandable rows) */
+  .deck-card-row {
+    border-top: 0.5px solid var(--border);
+  }
+  .deck-card-row:first-of-type {
+    border-top: none;
+  }
+  .deck-card-row > summary {
+    list-style: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+  }
+  .deck-card-row > summary::-webkit-details-marker {
+    display: none;
+  }
+  .deck-card-row .type-badge {
+    flex: 0 0 auto;
+    width: 42px;
+    font-family: var(--font-sp-mono), monospace;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .deck-card-row .chev {
+    flex: 0 0 auto;
+    margin-left: auto;
+    color: var(--text-muted);
+    transition: transform 0.15s ease;
+  }
+  .deck-card-row[open] > summary .chev {
+    transform: rotate(180deg);
+  }
+  .deck-card-row[open] > summary {
+    background: var(--surface-0);
+  }
+  .card-preview {
+    background: var(--surface-0);
+  }
+  .card-preview .q-prompt {
+    font-size: 1.2rem;
+    line-height: 1.25;
+  }
+  .card-preview .voice {
+    font-size: 1.02rem;
+  }
+  .card-preview .vocab-answer {
+    font-size: 1.6rem;
+  }
+  .card-preview .pull2 {
+    font-size: 1.1rem;
+  }

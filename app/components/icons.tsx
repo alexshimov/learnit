@@ -82,6 +82,14 @@ export function ChevronRight(p: P) {
   );
 }
 
+export function ChevronDown(p: P) {
+  return (
+    <Base {...p}>
+      <path d="M6 9l6 6 6-6" />
+    </Base>
+  );
+}
+
 export function Flame(p: P) {
   return (
     <Base {...p}>
