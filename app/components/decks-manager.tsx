@@ -77,8 +77,27 @@ export function DecksManager({
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [newFolder, setNewFolder] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    setMounted(true);
+    try {
+      const raw = localStorage.getItem("learnit:collapsed-folders");
+      if (raw) setCollapsed(new Set(JSON.parse(raw) as string[]));
+    } catch {}
+  }, []);
+
+  function toggleCollapse(key: string) {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      try {
+        localStorage.setItem("learnit:collapsed-folders", JSON.stringify([...next]));
+      } catch {}
+      return next;
+    });
+  }
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
@@ -179,6 +198,7 @@ export function DecksManager({
   function section(keyId: string, name: ReactNode, groupDecks: DeckOverview[], folder?: FolderT) {
     const shown = groupDecks.filter(visible);
     if (isFiltering && shown.length === 0) return null;
+    const isCollapsed = !isFiltering && collapsed.has(keyId);
     const rows = shown.map((deck) =>
       dnd ? (
         <SortableDeckRow key={deck.id} deck={deck} folders={sortedFolders} {...callbacks} />
@@ -189,7 +209,23 @@ export function DecksManager({
     return (
       <div key={keyId} className="flex flex-col gap-1.5">
         <div className="flex items-center gap-2 px-1">
-          <Folder size={15} style={{ color: "var(--text-muted)" }} />
+          <button
+            type="button"
+            onClick={() => toggleCollapse(keyId)}
+            aria-expanded={!isCollapsed}
+            aria-label={isCollapsed ? "Expand section" : "Collapse section"}
+            className="flex shrink-0 items-center gap-2"
+          >
+            <ChevronRight
+              size={14}
+              style={{
+                color: "var(--text-muted)",
+                transition: "transform 0.15s",
+                transform: isCollapsed ? "rotate(0deg)" : "rotate(90deg)",
+              }}
+            />
+            <Folder size={15} style={{ color: "var(--text-muted)" }} />
+          </button>
           {folder ? (
             <FolderHeader folder={folder} onRename={renameFolderLocal} onDelete={deleteFolderLocal} />
           ) : (
@@ -201,7 +237,7 @@ export function DecksManager({
             {groupDecks.length}
           </span>
         </div>
-        {shown.length === 0 ? (
+        {isCollapsed ? null : shown.length === 0 ? (
           <p className="px-1 text-[12px]" style={{ color: "var(--text-muted)" }}>
             Empty — move decks here from their ⋯ menu.
           </p>
