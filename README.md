@@ -45,14 +45,9 @@ tags: ch1
 Q: Name the five situations in the STARS model.
 A: Start-up, Turnaround, Accelerated growth, Realignment, Sustaining success.
 reverse: true
-
----
-
-The {{c1::STARS}} model matches strategy to the {{c2::business situation}}.
 ```
 
 - A block with `Q:` / `A:` is a **basic** card. Add `reverse: true` for a back→front card too.
-- A block containing `{{c1::…}}` is a **cloze** card (multiple deletions supported).
 - Optional per-card lines: `tags:`, `hint:`.
 - Answers accept markdown — bold, italics, `code`, links, and `![](image-url)`.
 

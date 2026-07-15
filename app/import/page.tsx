@@ -24,7 +24,8 @@ reverse: true
 
 ---
 
-An {{c1::eigenvalue}} is the factor λ by which its {{c2::eigenvector}} is scaled.`;
+Q: What is an eigenvalue?
+A: The scalar factor λ by which an eigenvector is stretched or shrunk.`;
 
 export default function ImportPage() {
   const [text, setText] = useState("");
@@ -110,7 +111,7 @@ export default function ImportPage() {
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder={"---\ndeck: My deck\ntopic: management\n---\n\nQ: A question?\nA: The answer.\n\n---\n\nA {{c1::cloze}} deletion works too."}
+        placeholder={"---\ndeck: My deck\ntopic: management\n---\n\nQ: A question?\nA: The answer.\n\n---\n\nQ: Another question?\nA: Another answer."}
         spellCheck={false}
         className="min-h-[280px] w-full resize-y rounded-2xl p-4 font-mono text-[13px] leading-relaxed outline-none"
         style={{
@@ -167,7 +168,7 @@ export default function ImportPage() {
       {text.trim() && preview && preview.deck.notes.length === 0 && (
         <div className="flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ background: "var(--danger-bg)", color: "var(--danger)" }}>
           <CircleAlert size={16} />
-          <p className="text-[13px]">No cards found. Use Q:/A: pairs or {"{{c1::cloze}}"} syntax.</p>
+          <p className="text-[13px]">No cards found. Use Q: / A: pairs (see the example).</p>
         </div>
       )}
 
@@ -190,8 +191,7 @@ export default function ImportPage() {
       <p className="px-1 text-[12px] leading-relaxed" style={{ color: "var(--text-muted)" }}>
         Tip: ask ChatGPT or Claude to &ldquo;turn this chapter into a deck&rdquo; using this exact
         format — frontmatter, then <span className="font-mono">Q:</span>/
-        <span className="font-mono">A:</span> pairs or{" "}
-        <span className="font-mono">{"{{c1::…}}"}</span> cloze deletions separated by{" "}
+        <span className="font-mono">A:</span> pairs separated by{" "}
         <span className="font-mono">---</span>.
       </p>
     </div>

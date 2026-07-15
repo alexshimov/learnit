@@ -59,17 +59,11 @@ reverse: true        (optional: also create the back→front card)
 hint: <optional>
 tags: <optional>
 
----
-
-<a sentence with a {{c1::hidden phrase}} and optionally a {{c2::second one}}>
-hint: <optional>
-
 CARD RULES
 - Separate every card with a line that is only --- (three dashes).
-- A card with Q:/A: is a "basic" card. A card containing {{c1::...}} is a
-  "cloze" card. Never mix Q:/A: and cloze in the same card.
+- Use only Q:/A: cards (plus the vocabulary format for English). Do NOT create
+  cloze / fill-in-the-blank cards — never use the {{c1::...}} syntax.
 - Put reverse:, hint:, and tags: each on their own line.
-- To show a hint inside a blank, use {{c1::answer::hint}}.
 - Never use --- anywhere except as the card separator.
 
 RICH BLOCKS (optional — place inside an answer, separated by a blank line)
@@ -93,7 +87,7 @@ A block's body is the lines beneath it, ending at a blank line. Example:
 
 WRITING GOOD CARDS
 - One idea per card (atomic). Split compound facts into several cards.
-- Prefer cloze deletions for definitions, terms, dates, formulas, and names.
+- For a specific term, date, or name, ask for it directly with a Q:/A: card.
 - Use "reverse: true" for vocabulary so I practice both recognition and recall.
 - Use Q:/A: for concepts, "why/how" questions, and comparisons.
 - Keep answers short. Bold the single key term being tested.
@@ -150,8 +144,8 @@ A: A **qualitative**, aspirational goal describing what you want to achieve.
 
 ---
 
-An objective is tracked by 3–5 {{c1::key results}}, which must be
-{{c2::measurable}} outcomes.
+Q: What are "Key Results" in the OKR framework?
+A: **3–5 measurable outcomes** that track progress toward an objective.
 
 ---
 

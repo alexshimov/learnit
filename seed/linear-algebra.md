@@ -9,7 +9,8 @@ A: A non-zero vector **v** whose direction is unchanged by A — it is only scal
 
 ---
 
-An {{c1::eigenvalue}} is the scalar λ by which its {{c2::eigenvector}} is stretched or shrunk.
+Q: What is the scalar λ by which an eigenvector is stretched or shrunk?
+A: The **eigenvalue**.
 
 ---
 
@@ -24,5 +25,6 @@ A: Exactly when its determinant is non-zero — equivalently, when its columns a
 
 ---
 
-The {{c1::rank}} of a matrix is the dimension of the space spanned by its columns.
+Q: What is the dimension of the space spanned by a matrix's columns called?
+A: The **rank**.
 hint: think "how many independent directions"

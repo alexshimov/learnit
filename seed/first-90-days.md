@@ -21,7 +21,8 @@ reverse: true
 
 ---
 
-The {{c1::STARS}} model matches your leadership strategy to the {{c2::business situation}} you are entering.
+Q: The STARS model matches your leadership strategy to what?
+A: The **business situation** you are entering.
 
 ---
 

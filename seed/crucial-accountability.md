@@ -25,7 +25,8 @@ You can't add motivation. You can only **reveal a consequence** already attached
 
 ---
 
-The three universal levers the research backs are autonomy, {{c1::competence}}, and {{c2::relatedness}} — the three needs of Self-Determination Theory.
+Q: Name the three needs of Self-Determination Theory — the universal motivation levers the research backs.
+A: **Autonomy**, **competence**, and **relatedness**.
 
 ::note SDT mapping
 Independence → autonomy, achievement → competence, relationships → relatedness.
