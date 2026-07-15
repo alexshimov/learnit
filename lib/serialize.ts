@@ -21,7 +21,8 @@ export function noteSummary(type: NoteType, fields: NoteFields): string {
   return (fields as BasicFields).front;
 }
 
-function serializeNote(
+/** Serialize a single note back into its one-card markdown (for per-card editing). */
+export function serializeCard(
   type: NoteType,
   fields: NoteFields,
   tags: string[],
@@ -60,6 +61,6 @@ export function serializeDeck(
   if (deck.tags && deck.tags.length) fm.push(`tags: [${deck.tags.join(", ")}]`);
   fm.push("---");
 
-  const blocks = notes.map((n) => serializeNote(n.type, n.fields, n.tags));
+  const blocks = notes.map((n) => serializeCard(n.type, n.fields, n.tags));
   return `${fm.join("\n")}\n\n${blocks.join("\n\n---\n\n")}\n`;
 }

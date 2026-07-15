@@ -2,7 +2,7 @@ import { asc, eq, and, lte, gte, sql } from "drizzle-orm";
 import { getDb } from "./db";
 import { decks, cards, notes, reviews } from "./db/schema";
 import type { NoteFields, NoteType } from "./types";
-import { serializeDeck, noteSummary } from "./serialize";
+import { serializeDeck, serializeCard, noteSummary } from "./serialize";
 import { cardKinds } from "./cards";
 
 export interface DeckOverview {
@@ -157,7 +157,14 @@ export interface DeckDetail {
   total: number;
   due: number;
   markdown: string;
-  items: { noteType: NoteType; fields: NoteFields; kinds: string[]; summary: string }[];
+  items: {
+    id: string;
+    noteType: NoteType;
+    fields: NoteFields;
+    kinds: string[];
+    summary: string;
+    markdown: string;
+  }[];
 }
 
 export async function getDeckDetail(
@@ -188,11 +195,13 @@ export async function getDeckDetail(
     total: cardRows.length,
     due: cardRows.filter((c) => c.due <= now).length,
     markdown: serializeDeck({ title: d.title, topic: d.topic, tags: d.tags }, notesLite),
-    items: notesLite.map((n) => ({
+    items: noteRows.map((n) => ({
+      id: n.id,
       noteType: n.type,
       fields: n.fields,
       kinds: cardKinds({ type: n.type, fields: n.fields, tags: n.tags }),
       summary: noteSummary(n.type, n.fields),
+      markdown: serializeCard(n.type, n.fields, n.tags),
     })),
   };
 }

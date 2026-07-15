@@ -11,6 +11,9 @@ import {
   appendToDeck,
   replaceDeckContent,
   deleteDeck,
+  addCardToDeck,
+  updateCard,
+  deleteCard,
   type InsertResult,
 } from "@/lib/import";
 import { applyRating, type Grade, type Sched } from "@/lib/fsrs";
@@ -70,6 +73,48 @@ export async function deleteDeckAction(
   await deleteDeck(input.data);
   revalidatePath("/");
   revalidatePath("/decks");
+  return { ok: true };
+}
+
+export async function addCardAction(
+  deckId: string,
+  markdown: string,
+): Promise<{ ok: true; added: number } | { ok: false; error: string }> {
+  const input = z.string().min(1).safeParse(markdown);
+  if (!input.success) return { ok: false, error: "The card is empty." };
+  const result = await addCardToDeck(deckId, input.data);
+  if (result.ok) {
+    revalidatePath("/");
+    revalidatePath("/decks");
+    revalidatePath(`/decks/${deckId}`);
+  }
+  return result;
+}
+
+export async function updateCardAction(
+  noteId: string,
+  markdown: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const input = z.string().min(1).safeParse(markdown);
+  if (!input.success) return { ok: false, error: "The card is empty." };
+  const result = await updateCard(noteId, input.data);
+  if (!result.ok) return result;
+  revalidatePath("/");
+  revalidatePath("/decks");
+  revalidatePath(`/decks/${result.deckId}`);
+  return { ok: true };
+}
+
+export async function deleteCardAction(
+  noteId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const input = z.string().min(1).safeParse(noteId);
+  if (!input.success) return { ok: false, error: "Invalid card." };
+  const result = await deleteCard(input.data);
+  if (!result.ok) return result;
+  revalidatePath("/");
+  revalidatePath("/decks");
+  revalidatePath(`/decks/${result.deckId}`);
   return { ok: true };
 }
 

@@ -255,3 +255,90 @@ export async function deleteDeck(deckId: string): Promise<void> {
   await db.delete(notes).where(eq(notes.deckId, deckId));
   await db.delete(decks).where(eq(decks.id, deckId));
 }
+
+/** Add one card (from a single-card markdown snippet) to a deck. */
+export async function addCardToDeck(
+  deckId: string,
+  markdown: string,
+): Promise<{ ok: true; added: number } | { ok: false; error: string }> {
+  const db = await getDb();
+  const deckRow = (await db.select().from(decks).where(eq(decks.id, deckId)).limit(1))[0];
+  if (!deckRow) return { ok: false, error: "Deck not found." };
+
+  const parsed = parseDeck(markdown);
+  if (parsed.notes.length === 0) {
+    return { ok: false, error: "No card found — use the Q: / A: format." };
+  }
+
+  const now = Date.now();
+  let added = 0;
+  for (const note of parsed.notes) {
+    await insertNote(deckId, note, now);
+    added++;
+  }
+  return { ok: true, added };
+}
+
+/** Replace one card's content. Card kinds that still exist keep their FSRS
+ *  scheduling; added/removed kinds (reverse/cloze variants) are reconciled. */
+export async function updateCard(
+  noteId: string,
+  markdown: string,
+): Promise<{ ok: true; deckId: string } | { ok: false; error: string }> {
+  const db = await getDb();
+  const noteRow = (await db.select().from(notes).where(eq(notes.id, noteId)).limit(1))[0];
+  if (!noteRow) return { ok: false, error: "Card not found." };
+
+  const parsed = parseDeck(markdown);
+  if (parsed.notes.length === 0) {
+    return { ok: false, error: "No card found — use the Q: / A: format." };
+  }
+  const note = parsed.notes[0];
+
+  await db
+    .update(notes)
+    .set({ type: note.type, fields: note.fields, tags: note.tags })
+    .where(eq(notes.id, noteId));
+
+  const desiredKinds = cardKinds(note);
+  const existingCards = await db
+    .select({ id: cards.id, kind: cards.kind })
+    .from(cards)
+    .where(eq(cards.noteId, noteId));
+  const existingKinds = new Set(existingCards.map((c) => c.kind));
+
+  const removeIds = existingCards.filter((c) => !desiredKinds.includes(c.kind)).map((c) => c.id);
+  if (removeIds.length) {
+    await db.delete(reviews).where(inArray(reviews.cardId, removeIds));
+    await db.delete(cards).where(inArray(cards.id, removeIds));
+  }
+
+  const now = Date.now();
+  for (const kind of desiredKinds) {
+    if (!existingKinds.has(kind)) {
+      await db.insert(cards).values({
+        id: randomUUID(),
+        noteId,
+        deckId: noteRow.deckId,
+        kind,
+        createdAt: now,
+        ...newCardState(now),
+      });
+    }
+  }
+
+  return { ok: true, deckId: noteRow.deckId };
+}
+
+/** Delete one card (its note, cards, and review history). */
+export async function deleteCard(
+  noteId: string,
+): Promise<{ ok: true; deckId: string } | { ok: false; error: string }> {
+  const db = await getDb();
+  const noteRow = (
+    await db.select({ deckId: notes.deckId }).from(notes).where(eq(notes.id, noteId)).limit(1)
+  )[0];
+  if (!noteRow) return { ok: false, error: "Card not found." };
+  await deleteNotes([noteId]);
+  return { ok: true, deckId: noteRow.deckId };
+}
