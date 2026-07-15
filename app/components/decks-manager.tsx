@@ -437,30 +437,32 @@ function DeckRowView({
 
   return (
     <div ref={innerRef} style={{ borderTop: "0.5px solid var(--border)", ...style }}>
-      <div className="flex items-center gap-2 px-2 py-2.5">
+      <div className="flex items-start gap-2 px-2 py-2.5">
         {grip}
-        <Link href={`/decks/${deck.id}`} className="min-w-0 flex-1">
-          <p className="truncate text-[14px] font-medium">{deck.title}</p>
-          <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>
-            {deck.topic ? `${deck.topic} · ` : ""}
-            {deck.total} card{deck.total === 1 ? "" : "s"}
-            {deck.due > 0 ? ` · ${deck.due} due` : ""}
-          </p>
-        </Link>
-        {deck.tags.length > 0 && (
-          <div className="hidden shrink-0 items-center gap-1 sm:flex">
-            {deck.tags.slice(0, 3).map((t) => (
-              <button
-                key={t}
-                onClick={() => onTagClick(t)}
-                className="chip"
-                style={{ fontSize: 11, padding: "3px 8px" }}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-        )}
+        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+          <Link href={`/decks/${deck.id}`} className="min-w-0">
+            <p className="truncate text-[14px] font-medium">{deck.title}</p>
+            <p className="truncate text-[12px]" style={{ color: "var(--text-muted)" }}>
+              {deck.topic ? `${deck.topic} · ` : ""}
+              {deck.total} card{deck.total === 1 ? "" : "s"}
+              {deck.due > 0 ? ` · ${deck.due} due` : ""}
+            </p>
+          </Link>
+          {deck.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {deck.tags.map((t) => (
+                <button
+                  key={t}
+                  onClick={() => onTagClick(t)}
+                  className="chip"
+                  style={{ fontSize: 11, padding: "3px 8px" }}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         <button
           onClick={() => {
             setTitle(deck.title);
@@ -468,7 +470,7 @@ function DeckRowView({
             setOpen((o) => !o);
           }}
           aria-label="Deck options"
-          className="shrink-0 px-2 py-1 text-[18px]"
+          className="shrink-0 px-2 py-1 text-[18px] leading-none"
           style={{ color: "var(--text-muted)" }}
         >
           ⋯
