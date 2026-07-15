@@ -459,6 +459,48 @@ function SortableDeckRow(props: { deck: DeckOverview; folders: FolderT[] } & Row
   return <DeckRowView {...props} grip={grip} innerRef={setNodeRef} style={style} />;
 }
 
+/** Spaced-repetition composition of a deck: a thin segmented bar
+ *  (review → learning → new) with a matching count legend. */
+function MaturityBar({
+  fresh,
+  learning,
+  review,
+}: {
+  fresh: number;
+  learning: number;
+  review: number;
+}) {
+  const total = fresh + learning + review;
+  if (total === 0) return null;
+  const parts = [
+    { v: review, c: "var(--success)", label: "review" },
+    { v: learning, c: "var(--warning)", label: "learning" },
+    { v: fresh, c: "var(--text-muted)", label: "new" },
+  ].filter((p) => p.v > 0);
+  return (
+    <div className="flex flex-col gap-1">
+      <div
+        className="flex h-1.5 overflow-hidden rounded-full"
+        style={{ background: "var(--surface-0)" }}
+      >
+        {parts.map((p, i) => (
+          <div key={i} style={{ width: `${(p.v / total) * 100}%`, background: p.c }} />
+        ))}
+      </div>
+      <div
+        className="flex flex-wrap gap-x-2 text-[10px]"
+        style={{ color: "var(--text-muted)", fontFamily: "var(--font-sp-mono), monospace" }}
+      >
+        {parts.map((p, i) => (
+          <span key={i}>
+            <span style={{ color: p.c }}>{p.v}</span> {p.label}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function DeckRowView({
   deck,
   folders,
@@ -492,6 +534,7 @@ function DeckRowView({
               {deck.total} card{deck.total === 1 ? "" : "s"}
             </p>
           </Link>
+          <MaturityBar fresh={deck.fresh} learning={deck.learning} review={deck.review} />
           {(deck.due > 0 || deck.tags.length > 0) && (
             <div className="flex flex-wrap items-center gap-1">
               {deck.due > 0 && (

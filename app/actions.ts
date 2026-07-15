@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { getDb } from "@/lib/db";
 import { cards, reviews } from "@/lib/db/schema";
+import { getStudyCardByNote, type QueueCard } from "@/lib/queries";
 import {
   insertDeck,
   appendToDeck,
@@ -124,6 +125,32 @@ export async function deleteCardAction(
   revalidatePath("/decks");
   revalidatePath(`/decks/${result.deckId}`);
   return { ok: true };
+}
+
+export async function updateStudyCardAction(
+  noteId: string,
+  kind: string,
+  markdown: string,
+): Promise<{ ok: true; card: QueueCard } | { ok: false; error: string }> {
+  const input = z
+    .object({
+      noteId: z.string().min(1),
+      kind: z.string().min(1),
+      markdown: z.string().min(1),
+    })
+    .safeParse({ noteId, kind, markdown });
+  if (!input.success) return { ok: false, error: "The card is empty." };
+
+  const r = await updateCard(input.data.noteId, input.data.markdown);
+  if (!r.ok) return r;
+
+  const card = await getStudyCardByNote(input.data.noteId, input.data.kind);
+  if (!card) return { ok: false, error: "This edit removed the card you were reviewing." };
+
+  revalidatePath("/");
+  revalidatePath("/decks");
+  revalidatePath(`/decks/${r.deckId}`);
+  return { ok: true, card };
 }
 
 export async function submitReviewAction(

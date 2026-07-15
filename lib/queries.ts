@@ -14,6 +14,10 @@ export interface DeckOverview {
   sortOrder: number;
   total: number;
   due: number;
+  /** Spaced-repetition breakdown by FSRS state. */
+  fresh: number; // never studied (New)
+  learning: number; // Learning + Relearning
+  review: number; // graduated to Review
 }
 
 export async function getDecksOverview(now: number = Date.now()): Promise<DeckOverview[]> {
@@ -27,21 +31,30 @@ export async function getDecksOverview(now: number = Date.now()): Promise<DeckOv
       deckId: cards.deckId,
       total: sql<number>`count(*)`,
       due: sql<number>`sum(case when ${cards.due} <= ${now} then 1 else 0 end)`,
+      fresh: sql<number>`sum(case when ${cards.state} = 0 then 1 else 0 end)`,
+      learning: sql<number>`sum(case when ${cards.state} in (1, 3) then 1 else 0 end)`,
+      review: sql<number>`sum(case when ${cards.state} = 2 then 1 else 0 end)`,
     })
     .from(cards)
     .groupBy(cards.deckId);
 
   const byDeck = new Map(counts.map((c) => [c.deckId, c]));
-  return deckRows.map((d) => ({
-    id: d.id,
-    title: d.title,
-    topic: d.topic,
-    tags: d.tags,
-    folderId: d.folderId,
-    sortOrder: d.sortOrder,
-    total: Number(byDeck.get(d.id)?.total ?? 0),
-    due: Number(byDeck.get(d.id)?.due ?? 0),
-  }));
+  return deckRows.map((d) => {
+    const c = byDeck.get(d.id);
+    return {
+      id: d.id,
+      title: d.title,
+      topic: d.topic,
+      tags: d.tags,
+      folderId: d.folderId,
+      sortOrder: d.sortOrder,
+      total: Number(c?.total ?? 0),
+      due: Number(c?.due ?? 0),
+      fresh: Number(c?.fresh ?? 0),
+      learning: Number(c?.learning ?? 0),
+      review: Number(c?.review ?? 0),
+    };
+  });
 }
 
 export async function getFolders(): Promise<{ id: string; name: string }[]> {
@@ -111,6 +124,8 @@ export async function getAllDecksMarkdown(): Promise<
 export interface QueueCard {
   cardId: string;
   kind: string;
+  noteId: string;
+  markdown: string;
   deckTitle: string;
   topic: string | null;
   noteType: NoteType;
@@ -149,8 +164,10 @@ export async function getDueQueue(
       lapses: cards.lapses,
       state: cards.state,
       lastReview: cards.lastReview,
+      noteId: notes.id,
       noteType: notes.type,
       fields: notes.fields,
+      noteTags: notes.tags,
       deckTitle: decks.title,
       topic: decks.topic,
     })
@@ -168,6 +185,8 @@ export async function getDueQueue(
   return rows.map((r) => ({
     cardId: r.cardId,
     kind: r.kind,
+    noteId: r.noteId,
+    markdown: serializeCard(r.noteType, r.fields, r.noteTags),
     deckTitle: r.deckTitle,
     topic: r.topic,
     noteType: r.noteType,
@@ -185,6 +204,57 @@ export async function getDueQueue(
       lastReview: r.lastReview,
     },
   }));
+}
+
+/** Re-read a note as a study queue card after it was edited — picks the same
+ *  card kind if it still exists, else the first available kind. */
+export async function getStudyCardByNote(
+  noteId: string,
+  preferKind: string,
+): Promise<QueueCard | null> {
+  const db = await getDb();
+  const n = (await db.select().from(notes).where(eq(notes.id, noteId)).limit(1))[0];
+  if (!n) return null;
+  const kinds = cardKinds({ type: n.type, fields: n.fields, tags: n.tags });
+  const kind = kinds.includes(preferKind) ? preferKind : kinds[0];
+  if (!kind) return null;
+  const c = (
+    await db
+      .select()
+      .from(cards)
+      .where(and(eq(cards.noteId, noteId), eq(cards.kind, kind)))
+      .limit(1)
+  )[0];
+  if (!c) return null;
+  const d = (
+    await db
+      .select({ title: decks.title, topic: decks.topic })
+      .from(decks)
+      .where(eq(decks.id, n.deckId))
+      .limit(1)
+  )[0];
+  return {
+    cardId: c.id,
+    kind,
+    noteId: n.id,
+    markdown: serializeCard(n.type, n.fields, n.tags),
+    deckTitle: d?.title ?? "",
+    topic: d?.topic ?? null,
+    noteType: n.type,
+    fields: n.fields,
+    sched: {
+      due: c.due,
+      stability: c.stability,
+      difficulty: c.difficulty,
+      elapsedDays: c.elapsedDays,
+      scheduledDays: c.scheduledDays,
+      learningSteps: c.learningSteps,
+      reps: c.reps,
+      lapses: c.lapses,
+      state: c.state,
+      lastReview: c.lastReview,
+    },
+  };
 }
 
 function dayKey(ms: number): string {
