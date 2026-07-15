@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { Flame, Play, BookOpen, Languages, ChevronRight, Sparkles } from "@/app/components/icons";
+import { Flame, Play, BookOpen, Languages, ChevronRight, Sparkles, Folder } from "@/app/components/icons";
 import {
-  getDecksOverview,
+  getDecksPageData,
   getStreak,
   getReviewedTodayCount,
+  type DeckOverview,
 } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
@@ -22,11 +23,24 @@ function deckIcon(topic: string | null) {
 
 export default async function TodayPage() {
   const now = Date.now();
-  const [decks, streak, reviewedToday] = await Promise.all([
-    getDecksOverview(now),
+  const [{ decks, folders }, streak, reviewedToday] = await Promise.all([
+    getDecksPageData(now),
     getStreak(now),
     getReviewedTodayCount(now),
   ]);
+
+  const anyGrouped = decks.some((d) => d.folderId != null);
+  const sections = anyGrouped
+    ? [
+        ...[...folders]
+          .sort((a, b) => a.name.localeCompare(b.name))
+          .map((f) => ({ key: f.id, name: f.name, decks: decks.filter((d) => d.folderId === f.id) }))
+          .filter((s) => s.decks.length > 0),
+        ...(decks.some((d) => d.folderId == null)
+          ? [{ key: "ungrouped", name: "Ungrouped", decks: decks.filter((d) => d.folderId == null) }]
+          : []),
+      ]
+    : [];
 
   const totalDue = decks.reduce((sum, d) => sum + d.due, 0);
   const denom = reviewedToday + totalDue;
@@ -110,53 +124,75 @@ export default async function TodayPage() {
             )}
           </section>
 
-          <section>
-            <h2 className="mb-2 px-1 text-[13px]" style={{ color: "var(--text-muted)" }}>
-              Your decks
-            </h2>
-            <div className="card overflow-hidden">
-              {decks.map((deck, i) => {
-                const Icon = deckIcon(deck.topic);
-                return (
-                  <Link
-                    key={deck.id}
-                    href={`/review?deck=${deck.id}`}
-                    className="flex items-center gap-3 px-3.5 py-3"
-                    style={{
-                      borderTop: i === 0 ? "none" : "0.5px solid var(--border)",
-                    }}
-                  >
-                    <span
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
-                      style={{ background: "var(--surface-0)", color: "var(--text-secondary)" }}
-                    >
-                      <Icon size={18} />
+          {anyGrouped ? (
+            <section className="flex flex-col gap-4">
+              {sections.map((s) => (
+                <div key={s.key} className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2 px-1">
+                    <Folder size={15} style={{ color: "var(--text-muted)" }} />
+                    <span className="eyebrow2">{s.name}</span>
+                    <span className="text-[12px]" style={{ color: "var(--text-muted)" }}>
+                      {s.decks.length}
                     </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-[14px] font-medium">{deck.title}</p>
-                      <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>
-                        {deck.topic ? `${deck.topic} · ` : ""}
-                        {deck.total} card{deck.total === 1 ? "" : "s"}
-                      </p>
-                    </div>
-                    {deck.due > 0 ? (
-                      <span
-                        className="rounded-full px-2 py-0.5 text-[12px] font-medium"
-                        style={{ background: "var(--accent-bg)", color: "var(--accent)" }}
-                      >
-                        {deck.due}
-                      </span>
-                    ) : (
-                      <ChevronRight size={16} style={{ color: "var(--text-muted)" }} />
-                    )}
-                  </Link>
-                );
-              })}
-            </div>
-          </section>
+                  </div>
+                  <div className="card overflow-hidden">
+                    {s.decks.map((deck, i) => (
+                      <DeckRow key={deck.id} deck={deck} first={i === 0} />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </section>
+          ) : (
+            <section>
+              <h2 className="mb-2 px-1 text-[13px]" style={{ color: "var(--text-muted)" }}>
+                Your decks
+              </h2>
+              <div className="card overflow-hidden">
+                {decks.map((deck, i) => (
+                  <DeckRow key={deck.id} deck={deck} first={i === 0} />
+                ))}
+              </div>
+            </section>
+          )}
         </>
       )}
     </div>
+  );
+}
+
+function DeckRow({ deck, first }: { deck: DeckOverview; first: boolean }) {
+  const Icon = deckIcon(deck.topic);
+  return (
+    <Link
+      href={`/review?deck=${deck.id}`}
+      className="flex items-center gap-3 px-3.5 py-3"
+      style={{ borderTop: first ? "none" : "0.5px solid var(--border)" }}
+    >
+      <span
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+        style={{ background: "var(--surface-0)", color: "var(--text-secondary)" }}
+      >
+        <Icon size={18} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[14px] font-medium">{deck.title}</p>
+        <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>
+          {deck.topic ? `${deck.topic} · ` : ""}
+          {deck.total} card{deck.total === 1 ? "" : "s"}
+        </p>
+      </div>
+      {deck.due > 0 ? (
+        <span
+          className="rounded-full px-2 py-0.5 text-[12px] font-medium"
+          style={{ background: "var(--accent-bg)", color: "var(--accent)" }}
+        >
+          {deck.due}
+        </span>
+      ) : (
+        <ChevronRight size={16} style={{ color: "var(--text-muted)" }} />
+      )}
+    </Link>
   );
 }
 
