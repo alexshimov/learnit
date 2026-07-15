@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition, type ChangeEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Play, Upload, Trash, ChevronDown, Plus } from "@/app/components/icons";
+import { ArrowLeft, Play, Upload, Download, Trash, ChevronDown, Plus } from "@/app/components/icons";
 import { CardFace } from "@/app/components/card-face";
 import type { DeckDetail } from "@/lib/queries";
 import {
@@ -190,6 +190,13 @@ export function DeckManager({ detail }: { detail: DeckDetail }) {
         >
           <Upload size={15} /> Update from file
         </button>
+        <a
+          href={`/decks/${detail.id}/export`}
+          download
+          className="btn-ghost flex items-center gap-2 px-4 py-2.5 text-[14px]"
+        >
+          <Download size={15} /> Export .md
+        </a>
         <input
           ref={fileRef}
           type="file"

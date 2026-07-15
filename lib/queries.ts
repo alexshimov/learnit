@@ -60,6 +60,54 @@ export async function getDecksPageData(now: number = Date.now()): Promise<DecksP
   return { decks: decksList, folders: foldersList };
 }
 
+/** A single deck's importable markdown (what an export should contain). */
+export async function getDeckMarkdown(
+  deckId: string,
+): Promise<{ title: string; markdown: string } | null> {
+  const db = await getDb();
+  const d = (await db.select().from(decks).where(eq(decks.id, deckId)).limit(1))[0];
+  if (!d) return null;
+  const noteRows = await db
+    .select()
+    .from(notes)
+    .where(eq(notes.deckId, deckId))
+    .orderBy(asc(notes.createdAt));
+  const markdown = serializeDeck(
+    { title: d.title, topic: d.topic, tags: d.tags },
+    noteRows.map((n) => ({ type: n.type, fields: n.fields, tags: n.tags })),
+  );
+  return { title: d.title, markdown };
+}
+
+/** Every deck's markdown, in the on-screen order — one entry per deck, for a
+ *  bulk export where each deck becomes its own file. */
+export async function getAllDecksMarkdown(): Promise<
+  { id: string; title: string; markdown: string }[]
+> {
+  const db = await getDb();
+  const deckRows = await db
+    .select()
+    .from(decks)
+    .orderBy(asc(decks.sortOrder), asc(decks.createdAt));
+  const out: { id: string; title: string; markdown: string }[] = [];
+  for (const d of deckRows) {
+    const noteRows = await db
+      .select()
+      .from(notes)
+      .where(eq(notes.deckId, d.id))
+      .orderBy(asc(notes.createdAt));
+    out.push({
+      id: d.id,
+      title: d.title,
+      markdown: serializeDeck(
+        { title: d.title, topic: d.topic, tags: d.tags },
+        noteRows.map((n) => ({ type: n.type, fields: n.fields, tags: n.tags })),
+      ),
+    });
+  }
+  return out;
+}
+
 export interface QueueCard {
   cardId: string;
   kind: string;

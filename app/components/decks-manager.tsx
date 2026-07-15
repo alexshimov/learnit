@@ -25,6 +25,7 @@ import {
   ChevronRight,
   Play,
   X,
+  Download,
 } from "@/app/components/icons";
 import type { DeckOverview } from "@/lib/queries";
 import {
@@ -346,12 +347,21 @@ export function DecksManager({
             </button>
           </div>
         ) : (
-          <button
-            onClick={() => setNewFolder("")}
-            className="btn-ghost flex items-center gap-2 px-4 py-2.5 text-[14px]"
-          >
-            <Plus size={15} /> New folder
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setNewFolder("")}
+              className="btn-ghost flex items-center gap-2 px-4 py-2.5 text-[14px]"
+            >
+              <Plus size={15} /> New folder
+            </button>
+            <a
+              href="/export"
+              download
+              className="btn-ghost flex items-center gap-2 px-4 py-2.5 text-[14px]"
+            >
+              <Download size={15} /> Export all
+            </a>
+          </div>
         )}
       </div>
     </div>
