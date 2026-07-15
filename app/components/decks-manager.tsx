@@ -42,6 +42,14 @@ function byName(a: FolderT, b: FolderT) {
   return a.name.localeCompare(b.name);
 }
 
+/** Map a tag to one of 6 palette classes — deterministic, so a tag keeps the
+ *  same color across the filter bar and every deck row. */
+function tagClass(tag: string): string {
+  let h = 0;
+  for (let i = 0; i < tag.length; i++) h = (Math.imul(h, 31) + tag.charCodeAt(i)) >>> 0;
+  return `tc tc${h % 6}`;
+}
+
 /** Flatten decks into folder-grouped order (folders A→Z, then ungrouped),
  *  preserving each group's existing relative order. */
 function regroup(decks: DeckOverview[], folders: FolderT[]): DeckOverview[] {
@@ -229,9 +237,7 @@ export function DecksManager({
           {folder ? (
             <FolderHeader folder={folder} onRename={renameFolderLocal} onDelete={deleteFolderLocal} />
           ) : (
-            <span className="eyebrow2" style={{ color: "var(--text-muted)" }}>
-              {name}
-            </span>
+            <span className="eyebrow2">{name}</span>
           )}
           <span className="text-[12px]" style={{ color: "var(--text-muted)" }}>
             {groupDecks.length}
@@ -293,12 +299,7 @@ export function DecksManager({
             <button
               key={t}
               onClick={() => setTagFilter(tagFilter === t ? null : t)}
-              className="chip"
-              style={
-                tagFilter === t
-                  ? { background: "var(--brand-tint)", borderColor: "var(--brand-line)", color: "var(--brand)" }
-                  : undefined
-              }
+              className={`chip ${tagClass(t)}${tagFilter === t ? " on" : ""}`}
             >
               {t}
             </button>
@@ -403,9 +404,7 @@ function FolderHeader({
 
   return (
     <span className="flex flex-1 items-center gap-2">
-      <span className="eyebrow2" style={{ color: "var(--text-secondary)" }}>
-        {folder.name}
-      </span>
+      <span className="eyebrow2">{folder.name}</span>
       <button onClick={() => setEditing(true)} className="text-[11px]" style={{ color: "var(--text-muted)" }}>
         rename
       </button>
@@ -481,16 +480,27 @@ function DeckRowView({
             <p className="truncate text-[12px]" style={{ color: "var(--text-muted)" }}>
               {deck.topic ? `${deck.topic} · ` : ""}
               {deck.total} card{deck.total === 1 ? "" : "s"}
-              {deck.due > 0 ? ` · ${deck.due} due` : ""}
             </p>
           </Link>
-          {deck.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1">
+          {(deck.due > 0 || deck.tags.length > 0) && (
+            <div className="flex flex-wrap items-center gap-1">
+              {deck.due > 0 && (
+                <span
+                  className="rounded-full px-2 py-0.5 text-[11px] font-medium"
+                  style={{
+                    background: "var(--brand-tint)",
+                    border: "0.5px solid var(--brand-line)",
+                    color: "var(--brand)",
+                  }}
+                >
+                  {deck.due} due
+                </span>
+              )}
               {deck.tags.map((t) => (
                 <button
                   key={t}
                   onClick={() => onTagClick(t)}
-                  className="chip"
+                  className={`chip ${tagClass(t)}`}
                   style={{ fontSize: 11, padding: "3px 8px" }}
                 >
                   {t}

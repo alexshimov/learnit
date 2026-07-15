@@ -416,6 +416,31 @@
     color: var(--brand);
   }
 
+  /* deterministic colored tags — same tag, same color everywhere, for scannability */
+  .chip.tc {
+    background: rgb(var(--tag) / 0.12);
+    border-color: rgb(var(--tag) / 0.32);
+    color: rgb(var(--tag));
+  }
+  .chip.tc.on {
+    background: rgb(var(--tag) / 0.2);
+    border-color: rgb(var(--tag) / 0.64);
+  }
+  .tc0 { --tag: 106 90 224; }
+  .tc1 { --tag: 47 111 208; }
+  .tc2 { --tag: 18 133 95; }
+  .tc3 { --tag: 151 100 15; }
+  .tc4 { --tag: 194 69 47; }
+  .tc5 { --tag: 39 128 150; }
+  @media (prefers-color-scheme: dark) {
+    .tc0 { --tag: 154 143 240; }
+    .tc1 { --tag: 127 178 238; }
+    .tc2 { --tag: 94 202 162; }
+    .tc3 { --tag: 230 182 101; }
+    .tc4 { --tag: 237 160 147; }
+    .tc5 { --tag: 120 200 218; }
+  }
+
   /* deck card preview (expandable rows) */
   .deck-card-row {
     border-top: 0.5px solid var(--border);
