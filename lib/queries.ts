@@ -1,6 +1,6 @@
 import { asc, eq, and, lte, gte, sql } from "drizzle-orm";
 import { getDb } from "./db";
-import { decks, cards, notes, reviews } from "./db/schema";
+import { decks, cards, notes, reviews, folders } from "./db/schema";
 import type { NoteFields, NoteType } from "./types";
 import { serializeDeck, serializeCard, noteSummary } from "./serialize";
 import { cardKinds } from "./cards";
@@ -9,13 +9,19 @@ export interface DeckOverview {
   id: string;
   title: string;
   topic: string | null;
+  tags: string[];
+  folderId: string | null;
+  sortOrder: number;
   total: number;
   due: number;
 }
 
 export async function getDecksOverview(now: number = Date.now()): Promise<DeckOverview[]> {
   const db = await getDb();
-  const deckRows = await db.select().from(decks).orderBy(asc(decks.createdAt));
+  const deckRows = await db
+    .select()
+    .from(decks)
+    .orderBy(asc(decks.sortOrder), asc(decks.createdAt));
   const counts = await db
     .select({
       deckId: cards.deckId,
@@ -30,9 +36,28 @@ export async function getDecksOverview(now: number = Date.now()): Promise<DeckOv
     id: d.id,
     title: d.title,
     topic: d.topic,
+    tags: d.tags,
+    folderId: d.folderId,
+    sortOrder: d.sortOrder,
     total: Number(byDeck.get(d.id)?.total ?? 0),
     due: Number(byDeck.get(d.id)?.due ?? 0),
   }));
+}
+
+export async function getFolders(): Promise<{ id: string; name: string }[]> {
+  const db = await getDb();
+  const rows = await db.select().from(folders).orderBy(asc(folders.name));
+  return rows.map((f) => ({ id: f.id, name: f.name }));
+}
+
+export interface DecksPageData {
+  decks: DeckOverview[];
+  folders: { id: string; name: string }[];
+}
+
+export async function getDecksPageData(now: number = Date.now()): Promise<DecksPageData> {
+  const [decksList, foldersList] = await Promise.all([getDecksOverview(now), getFolders()]);
+  return { decks: decksList, folders: foldersList };
 }
 
 export interface QueueCard {

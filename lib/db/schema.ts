@@ -5,11 +5,19 @@ import type { NoteFields, NoteType } from "../types";
 // and would overflow Date.now() (~1.7e12).
 const ts = (name: string) => bigint(name, { mode: "number" });
 
+export const folders = pgTable("folders", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  createdAt: ts("created_at").notNull(),
+});
+
 export const decks = pgTable("decks", {
   id: text("id").primaryKey(),
   title: text("title").notNull(),
   topic: text("topic"),
   tags: jsonb("tags").$type<string[]>().notNull().default([]),
+  folderId: text("folder_id").references(() => folders.id, { onDelete: "set null" }),
+  sortOrder: integer("sort_order").notNull().default(0),
   createdAt: ts("created_at").notNull(),
 });
 
@@ -65,6 +73,7 @@ export const reviews = pgTable("reviews", {
   reviewedAt: ts("reviewed_at").notNull(),
 });
 
+export type FolderRow = typeof folders.$inferSelect;
 export type DeckRow = typeof decks.$inferSelect;
 export type NoteRow = typeof notes.$inferSelect;
 export type CardRow = typeof cards.$inferSelect;

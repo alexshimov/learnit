@@ -1,5 +1,5 @@
 import { randomUUID, createHash } from "node:crypto";
-import { eq, inArray, asc } from "drizzle-orm";
+import { eq, inArray, asc, sql } from "drizzle-orm";
 import { getDb } from "./db";
 import { decks, notes, cards, reviews } from "./db/schema";
 import { parseDeck } from "./markdown";
@@ -125,11 +125,16 @@ export async function insertDeck(markdown: string): Promise<InsertResult> {
 
   const now = Date.now();
   const deckId = randomUUID();
+  const maxRow = await db
+    .select({ m: sql<number>`coalesce(max(${decks.sortOrder}), -1)` })
+    .from(decks);
+  const sortOrder = Number(maxRow[0]?.m ?? -1) + 1;
   await db.insert(decks).values({
     id: deckId,
     title: deck.title,
     topic: deck.topic ?? null,
     tags: deck.tags,
+    sortOrder,
     createdAt: now,
   });
 

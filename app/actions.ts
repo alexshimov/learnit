@@ -16,6 +16,14 @@ import {
   deleteCard,
   type InsertResult,
 } from "@/lib/import";
+import {
+  renameDeck,
+  setDeckTags,
+  createFolder,
+  renameFolder,
+  deleteFolder,
+  organizeDecks,
+} from "@/lib/organize";
 import { applyRating, type Grade, type Sched } from "@/lib/fsrs";
 
 export async function importDeckAction(markdown: string): Promise<InsertResult> {
@@ -160,4 +168,79 @@ export async function submitReviewAction(
 
   revalidatePath("/");
   return { ok: true, due: sched.due };
+}
+
+export async function renameDeckAction(
+  deckId: string,
+  title: string,
+): Promise<{ ok: boolean }> {
+  const input = z
+    .object({ deckId: z.string().min(1), title: z.string().trim().min(1) })
+    .safeParse({ deckId, title });
+  if (!input.success) return { ok: false };
+  await renameDeck(input.data.deckId, input.data.title);
+  revalidatePath("/");
+  revalidatePath("/decks");
+  revalidatePath(`/decks/${input.data.deckId}`);
+  return { ok: true };
+}
+
+export async function setDeckTagsAction(
+  deckId: string,
+  tags: string[],
+): Promise<{ ok: boolean }> {
+  const input = z
+    .object({ deckId: z.string().min(1), tags: z.array(z.string()) })
+    .safeParse({ deckId, tags });
+  if (!input.success) return { ok: false };
+  const clean = input.data.tags.map((t) => t.trim()).filter(Boolean);
+  await setDeckTags(input.data.deckId, clean);
+  revalidatePath("/");
+  revalidatePath("/decks");
+  return { ok: true };
+}
+
+export async function createFolderAction(
+  name: string,
+): Promise<{ ok: true; id: string; name: string } | { ok: false }> {
+  const input = z.string().trim().min(1).safeParse(name);
+  if (!input.success) return { ok: false };
+  const folder = await createFolder(input.data);
+  revalidatePath("/decks");
+  return { ok: true, ...folder };
+}
+
+export async function renameFolderAction(
+  folderId: string,
+  name: string,
+): Promise<{ ok: boolean }> {
+  const input = z
+    .object({ folderId: z.string().min(1), name: z.string().trim().min(1) })
+    .safeParse({ folderId, name });
+  if (!input.success) return { ok: false };
+  await renameFolder(input.data.folderId, input.data.name);
+  revalidatePath("/decks");
+  return { ok: true };
+}
+
+export async function deleteFolderAction(folderId: string): Promise<{ ok: boolean }> {
+  const input = z.string().min(1).safeParse(folderId);
+  if (!input.success) return { ok: false };
+  await deleteFolder(input.data);
+  revalidatePath("/");
+  revalidatePath("/decks");
+  return { ok: true };
+}
+
+export async function organizeDecksAction(
+  order: { id: string; folderId: string | null }[],
+): Promise<{ ok: boolean }> {
+  const input = z
+    .array(z.object({ id: z.string().min(1), folderId: z.string().nullable() }))
+    .safeParse(order);
+  if (!input.success) return { ok: false };
+  await organizeDecks(input.data);
+  revalidatePath("/");
+  revalidatePath("/decks");
+  return { ok: true };
 }

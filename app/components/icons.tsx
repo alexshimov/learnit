@@ -173,6 +173,43 @@ export function Trash(p: P) {
   );
 }
 
+export function Search(p: P) {
+  return (
+    <Base {...p}>
+      <circle cx="11" cy="11" r="7" />
+      <path d="m21 21-4.3-4.3" />
+    </Base>
+  );
+}
+
+export function Folder(p: P) {
+  return (
+    <Base {...p}>
+      <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    </Base>
+  );
+}
+
+export function GripVertical({ size = 24, ...rest }: P) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      {...rest}
+    >
+      <circle cx="9" cy="6" r="1.5" />
+      <circle cx="9" cy="12" r="1.5" />
+      <circle cx="9" cy="18" r="1.5" />
+      <circle cx="15" cy="6" r="1.5" />
+      <circle cx="15" cy="12" r="1.5" />
+      <circle cx="15" cy="18" r="1.5" />
+    </svg>
+  );
+}
+
 export function Play({ size = 24, ...rest }: P) {
   return (
     <svg
