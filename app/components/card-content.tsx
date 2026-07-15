@@ -54,6 +54,41 @@ export function CardContent({ text }: { text: string }) {
           );
         }
 
+        if (b.type === "steps") {
+          return (
+            <ol key={i} className="steps2">
+              {b.items.map((s, j) => (
+                <li key={j} className="step2">
+                  <span className="step2-n">{j + 1}</span>
+                  <div
+                    className="step2-t"
+                    dangerouslySetInnerHTML={{ __html: mdToHtml(s) }}
+                  />
+                </li>
+              ))}
+            </ol>
+          );
+        }
+
+        if (b.type === "compare") {
+          return (
+            <div key={i} className="compare2">
+              {b.cols.map((c, j) => (
+                <div
+                  key={j}
+                  className={`cmp-col${c.tone === "good" ? " cmp-good" : c.tone === "bad" ? " cmp-bad" : ""}`}
+                >
+                  <div className="cmp-label">{c.label}</div>
+                  <div
+                    className="cmp-text"
+                    dangerouslySetInnerHTML={{ __html: mdToHtml(c.text) }}
+                  />
+                </div>
+              ))}
+            </div>
+          );
+        }
+
         const label = b.label ?? DEFAULT_LABEL[b.variant];
         return (
           <div key={i} className={`callout2 co-${b.variant}`}>

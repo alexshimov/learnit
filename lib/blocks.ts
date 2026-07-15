@@ -2,9 +2,11 @@ export type Block =
   | { type: "para"; text: string }
   | { type: "pull"; text: string }
   | { type: "cascade"; nodes: { title: string; subtitle?: string; connector?: string }[] }
+  | { type: "steps"; items: string[] }
+  | { type: "compare"; cols: { label: string; text: string; tone?: "good" | "bad" }[] }
   | { type: "callout"; variant: "takeaway" | "warn" | "note"; label?: string; text: string };
 
-const KEYWORDS = ["cascade", "takeaway", "warn", "note", "pull"];
+const KEYWORDS = ["cascade", "steps", "compare", "takeaway", "warn", "note", "pull"];
 
 /**
  * Split card content into renderable blocks. Plain text becomes paragraphs;
@@ -55,6 +57,23 @@ export function parseBlocks(input: string): Block[] {
             };
           });
         blocks.push({ type: "cascade", nodes });
+      } else if (kw === "steps") {
+        const items = content.map((c) => c.trim()).filter(Boolean);
+        blocks.push({ type: "steps", items });
+      } else if (kw === "compare") {
+        const cols = content
+          .map((c) => c.trim())
+          .filter(Boolean)
+          .map((c) => {
+            const [label, text, tone] = c.split("|").map((s) => s.trim());
+            const t = (tone ?? "").toLowerCase();
+            return {
+              label: label ?? "",
+              text: text ?? "",
+              tone: t === "good" ? ("good" as const) : t === "bad" ? ("bad" as const) : undefined,
+            };
+          });
+        blocks.push({ type: "compare", cols });
       } else if (kw === "pull") {
         blocks.push({ type: "pull", text: content.join("\n").trim() });
       } else {

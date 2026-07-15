@@ -69,6 +69,8 @@ CARD RULES
 RICH BLOCKS (optional — place inside an answer, separated by a blank line)
 Use these only when a concept genuinely benefits; most cards need none.
 - ::cascade        a short process/flow. Each following line: Title | subtitle
+- ::steps          a numbered procedure. Each following line = one step (bold its lead phrase)
+- ::compare        two side-by-side cards. Each line: Label | text | good   (or | bad, or omit)
 - ::takeaway LABEL  a highlighted key point (LABEL after :: is optional)
 - ::warn LABEL      a caution or common mistake
 - ::note LABEL      a neutral aside
@@ -94,16 +96,22 @@ WRITING GOOD CARDS
 - Avoid yes/no questions and questions with multiple valid answers.
 - Aim for 8–20 cards per chapter unless I ask for more.
 
-EXAM MODE (management, programming, math, books — everything non-vocabulary)
-Make "exam tickets": exam-style questions with complete model answers.
-- COVER THE MATERIAL EXHAUSTIVELY. Extract every definition, principle, cause,
-  step, distinction, formula, and worked example. Prefer many precise cards over
-  a few broad ones; split a large topic across several tickets.
-- Each card:
-    Q: an exam question — "Explain…", "Compare…", "Why…", "Derive…", "List and describe…"
-    A: a complete, self-contained model answer. Use ::cascade / ::takeaway /
-       ::pull / ::warn where structure helps.
-- After the deck, note any part of the material that likely needs more cards.
+EXAM MODE (management, programming, math, books, study guides — everything non-vocabulary)
+Make open-question "exam tickets": open-ended questions with complete model answers.
+- COVER THE SOURCE FULLY. Extract every definition, principle, cause, step,
+  distinction, framework, story lesson, caution, and example. Prefer many precise
+  cards over a few broad ones; do not skip sections.
+- If the source is an interactive study guide / companion, turn ALL of it into
+  open Q:/A: cards — including anything shown as a quiz, toggle, or drill; ask it
+  as an open question, never multiple-choice.
+- Open questions only ("Explain…", "Compare…", "Why…", "List and describe…",
+  "What is…"). No multiple-choice and no fill-in-the-blank.
+- PRESERVE THE VISUAL RICHNESS. Give answers the same formatting the guide uses,
+  by mapping its devices to blocks:
+    pull-quote → ::pull     key takeaway → ::takeaway    caution → ::warn
+    aside → ::note          numbered procedure → ::steps    this-vs-that → ::compare
+    framework / sequence → ::cascade
+- After the deck, note any section that likely needs more cards.
 
 VOCABULARY MODE (English words and phrases) — direction RU → EN
 For each word output ONE block (no Q:/A:, no --- inside the block):
