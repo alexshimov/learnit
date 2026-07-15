@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Play, Upload, Download, Trash, ChevronDown, Plus } from "@/app/components/icons";
 import { CardFace } from "@/app/components/card-face";
-import type { DeckDetail } from "@/lib/queries";
+import type { DeckDetail, SrState } from "@/lib/queries";
 import {
   saveDeckContentAction,
   appendDeckFromMarkdownAction,
@@ -19,6 +19,32 @@ function kindLabel(kind: string): string {
   if (kind === "reverse") return "Back → front";
   if (kind.startsWith("cloze:")) return `Cloze ${kind.split(":")[1]}`;
   return "Front → back";
+}
+
+/** Compact spaced-repetition state for a card row: a colored dot plus the
+ *  state (New) or, once studied, when it's next due (10m / 3d / due). */
+function StateBadge({ srState, dueLabel }: { srState: SrState; dueLabel: string }) {
+  const color =
+    srState === "new"
+      ? "var(--text-muted)"
+      : srState === "learning"
+        ? "var(--warning)"
+        : "var(--success)";
+  const text = srState === "new" ? "New" : dueLabel;
+  const stateName = srState === "new" ? "New" : srState === "learning" ? "Learning" : "Review";
+  return (
+    <span
+      className="flex shrink-0 items-center gap-1.5 text-[11px]"
+      style={{ fontFamily: "var(--font-sp-mono), monospace" }}
+      title={dueLabel === "due" ? `${stateName} · due now` : dueLabel ? `${stateName} · due in ${dueLabel}` : stateName}
+    >
+      <span
+        className="inline-block h-1.5 w-1.5 rounded-full"
+        style={{ background: color }}
+      />
+      <span style={{ color: dueLabel === "due" ? "var(--brand)" : color }}>{text}</span>
+    </span>
+  );
 }
 
 export function DeckManager({ detail }: { detail: DeckDetail }) {
@@ -269,9 +295,13 @@ export function DeckManager({ detail }: { detail: DeckDetail }) {
             <details key={it.id} className="deck-card-row">
               <summary>
                 <span className="type-badge">{it.noteType}</span>
-                <span className="truncate text-[13px]" style={{ color: "var(--text-secondary)" }}>
+                <span
+                  className="min-w-0 flex-1 truncate text-[13px]"
+                  style={{ color: "var(--text-secondary)" }}
+                >
                   {it.summary}
                 </span>
+                <StateBadge srState={it.srState} dueLabel={it.dueLabel} />
                 <ChevronDown size={16} className="chev" />
               </summary>
               <div className="card-preview px-4 pb-4">

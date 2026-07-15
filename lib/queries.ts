@@ -4,6 +4,9 @@ import { decks, cards, notes, reviews, folders } from "./db/schema";
 import type { NoteFields, NoteType } from "./types";
 import { serializeDeck, serializeCard, noteSummary } from "./serialize";
 import { cardKinds } from "./cards";
+import { intervalLabel } from "./fsrs";
+
+export type SrState = "new" | "learning" | "review";
 
 export interface DeckOverview {
   id: string;
@@ -307,6 +310,8 @@ export interface DeckDetail {
     kinds: string[];
     summary: string;
     markdown: string;
+    srState: SrState;
+    dueLabel: string; // "" for new, else "due" or a compact interval like "3d"
   }[];
 }
 
@@ -324,9 +329,20 @@ export async function getDeckDetail(
     .where(eq(notes.deckId, deckId))
     .orderBy(asc(notes.createdAt));
   const cardRows = await db
-    .select({ due: cards.due })
+    .select({ noteId: cards.noteId, state: cards.state, due: cards.due })
     .from(cards)
     .where(eq(cards.deckId, deckId));
+
+  // Group a note's cards so each browse row can show its scheduling state.
+  const byNote = new Map<string, { state: number; due: number }[]>();
+  for (const c of cardRows) {
+    const arr = byNote.get(c.noteId);
+    if (arr) arr.push({ state: c.state, due: c.due });
+    else byNote.set(c.noteId, [{ state: c.state, due: c.due }]);
+  }
+  // Rank by maturity (New < Learning/Relearning < Review) so a multi-card
+  // note surfaces its least-mature card.
+  const maturity = (s: number) => (s === 0 ? 0 : s === 2 ? 2 : 1);
 
   const notesLite = noteRows.map((n) => ({ type: n.type, fields: n.fields, tags: n.tags }));
 
@@ -338,13 +354,34 @@ export async function getDeckDetail(
     total: cardRows.length,
     due: cardRows.filter((c) => c.due <= now).length,
     markdown: serializeDeck({ title: d.title, topic: d.topic, tags: d.tags }, notesLite),
-    items: noteRows.map((n) => ({
-      id: n.id,
-      noteType: n.type,
-      fields: n.fields,
-      kinds: cardKinds({ type: n.type, fields: n.fields, tags: n.tags }),
-      summary: noteSummary(n.type, n.fields),
-      markdown: serializeCard(n.type, n.fields, n.tags),
-    })),
+    items: noteRows.map((n) => {
+      const cs = byNote.get(n.id) ?? [];
+      let repState = 0;
+      let minDue = Infinity;
+      let first = true;
+      for (const c of cs) {
+        if (c.due < minDue) minDue = c.due;
+        if (first || maturity(c.state) < maturity(repState)) repState = c.state;
+        first = false;
+      }
+      const srState: SrState =
+        repState === 0 ? "new" : repState === 2 ? "review" : "learning";
+      const dueLabel =
+        srState === "new"
+          ? ""
+          : !isFinite(minDue) || minDue <= now
+            ? "due"
+            : intervalLabel(minDue, now);
+      return {
+        id: n.id,
+        noteType: n.type,
+        fields: n.fields,
+        kinds: cardKinds({ type: n.type, fields: n.fields, tags: n.tags }),
+        summary: noteSummary(n.type, n.fields),
+        markdown: serializeCard(n.type, n.fields, n.tags),
+        srState,
+        dueLabel,
+      };
+    }),
   };
 }
