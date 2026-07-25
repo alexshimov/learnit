@@ -5,20 +5,21 @@ import type {
   ClozeFields,
   VocabFields,
 } from "./types";
+import { stripMd } from "./md-render";
 
-/** Short one-line summary of a note for browse lists. */
+/** Short one-line summary of a note for browse lists. Markdown syntax is
+ *  stripped so the preview reads as plain text. */
 export function noteSummary(type: NoteType, fields: NoteFields): string {
   if (type === "vocab") {
     const f = fields as VocabFields;
-    return `${f.ru} → ${f.en}`;
+    return stripMd(`${f.ru} → ${f.en}`);
   }
   if (type === "cloze") {
-    return (fields as ClozeFields).text.replace(
-      /\{\{c\d+::(.+?)(?:::.+?)?\}\}/g,
-      "[…]",
+    return stripMd(
+      (fields as ClozeFields).text.replace(/\{\{c\d+::(.+?)(?:::.+?)?\}\}/g, "[…]"),
     );
   }
-  return (fields as BasicFields).front;
+  return stripMd((fields as BasicFields).front);
 }
 
 /** Serialize a single note back into its one-card markdown (for per-card editing). */

@@ -1,5 +1,5 @@
 import { parseBlocks } from "@/lib/blocks";
-import { mdToHtml } from "@/lib/md-render";
+import { mdToHtml, mdInline } from "@/lib/md-render";
 
 const DEFAULT_LABEL: Record<string, string> = {
   takeaway: "Takeaway",
@@ -45,8 +45,16 @@ export function CardContent({ text }: { text: string }) {
                   )}
                   <div className={`casc-node${j === b.nodes.length - 1 ? " last" : ""}`}>
                     <span className="casc-b">{j + 1}</span>
-                    <span className="casc-k">{node.title}</span>
-                    {node.subtitle && <span className="casc-v">{node.subtitle}</span>}
+                    <span
+                      className="casc-k"
+                      dangerouslySetInnerHTML={{ __html: mdInline(node.title) }}
+                    />
+                    {node.subtitle && (
+                      <span
+                        className="casc-v"
+                        dangerouslySetInnerHTML={{ __html: mdInline(node.subtitle) }}
+                      />
+                    )}
                   </div>
                 </div>
               ))}
@@ -78,7 +86,10 @@ export function CardContent({ text }: { text: string }) {
                   key={j}
                   className={`cmp-col${c.tone === "good" ? " cmp-good" : c.tone === "bad" ? " cmp-bad" : ""}`}
                 >
-                  <div className="cmp-label">{c.label}</div>
+                  <div
+                    className="cmp-label"
+                    dangerouslySetInnerHTML={{ __html: mdInline(c.label) }}
+                  />
                   <div
                     className="cmp-text"
                     dangerouslySetInnerHTML={{ __html: mdToHtml(c.text) }}
@@ -92,7 +103,7 @@ export function CardContent({ text }: { text: string }) {
         const label = b.label ?? DEFAULT_LABEL[b.variant];
         return (
           <div key={i} className={`callout2 co-${b.variant}`}>
-            <span className="co-l">{label}</span>
+            <span className="co-l" dangerouslySetInnerHTML={{ __html: mdInline(label ?? "") }} />
             <div className="co-b" dangerouslySetInnerHTML={{ __html: mdToHtml(b.text) }} />
           </div>
         );

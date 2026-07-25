@@ -6,11 +6,12 @@ function escapeHtml(s: string): string {
 }
 
 /**
- * Minimal, dependency-free markdown for card content. Handles the subset
- * we author: cloze tokens, images, links, bold/italic/code, and paragraphs.
+ * Inline-only markdown: cloze tokens, images, links, bold/italic/code, with
+ * no paragraph wrapping. Use for short labels and headings that live inside
+ * an element where a nested <p> would be invalid.
  * Content is escaped first, so it is safe for single-user authored decks.
  */
-export function mdToHtml(src: string): string {
+export function mdInline(src: string): string {
   let s = escapeHtml(src);
 
   // Cloze tokens (emitted by renderCard) — process before other brackets.
@@ -34,8 +35,30 @@ export function mdToHtml(src: string): string {
   s = s.replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<em>$2</em>");
   s = s.replace(/`([^`]+)`/g, "<code>$1</code>");
 
-  // Paragraphs + line breaks.
-  return s
+  return s;
+}
+
+/**
+ * Drop markdown syntax and keep the words — for one-line text previews
+ * (browse lists) where styled markup would be noise.
+ */
+export function stripMd(src: string): string {
+  return src
+    .replace(/!\[([^\]]*)\]\([^)\s]+\)/g, "$1")
+    .replace(/\[([^\]]+)\]\([^)\s]+\)/g, "$1")
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/(^|[^*])\*([^*\n]+)\*/g, "$1$2")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Minimal, dependency-free markdown for card content. Handles the subset
+ * we author: cloze tokens, images, links, bold/italic/code, and paragraphs.
+ */
+export function mdToHtml(src: string): string {
+  return mdInline(src)
     .split(/\n{2,}/)
     .map((p) => `<p>${p.replace(/\n/g, "<br/>")}</p>`)
     .join("");
