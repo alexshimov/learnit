@@ -148,6 +148,42 @@ export interface QueueCard {
 }
 
 /**
+ * How urgently a card wants attention, lowest first:
+ *   0 — learning / relearning: in progress, or recently failed
+ *   1 — review: a graduated card that came due
+ *   2 — new: never studied
+ * Reviews are memory you stand to lose, so they outrank new cards; new cards
+ * are optional workload. Without this a freshly imported deck buries the
+ * handful of words you keep getting wrong under a wall of new ones.
+ */
+function priority(state: number): number {
+  if (state === 1 || state === 3) return 0;
+  return state === 2 ? 1 : 2;
+}
+
+/**
+ * Shuffle cards that are equally urgent — same priority band and same due
+ * timestamp. Scheduling order is preserved, but a run of cards sharing one
+ * due gets a fresh order each session. Without this, every card imported
+ * together carries the same due and the deck is always dealt in file order.
+ */
+function shufflePeers<T extends { due: number; state: number }>(rows: T[]): T[] {
+  const out = [...rows];
+  const peers = (a: T, b: T) => a.due === b.due && priority(a.state) === priority(b.state);
+  let start = 0;
+  for (let i = 1; i <= out.length; i++) {
+    if (i === out.length || !peers(out[i], out[start])) {
+      for (let j = i - 1; j > start; j--) {
+        const k = start + Math.floor(Math.random() * (j - start + 1));
+        [out[j], out[k]] = [out[k], out[j]];
+      }
+      start = i;
+    }
+  }
+  return out;
+}
+
+/**
  * Keep two cards of the same note apart in the queue. Both directions of a
  * word are created together and so fall due together — showing them
  * back-to-back would give the answer away on the second one.
@@ -207,6 +243,11 @@ export async function getDeckDirections(
   };
 }
 
+/** Ceiling on rows pulled before shuffling. The session limit is applied
+ *  afterwards, so a short session draws from the whole due pool rather than
+ *  always the same head of it. */
+const QUEUE_FETCH_CAP = 2000;
+
 export async function getDueQueue(
   now: number = Date.now(),
   deckId?: string,
@@ -245,31 +286,39 @@ export async function getDueQueue(
         ...(direction ? [eq(cards.kind, DIRECTION_KIND[direction])] : []),
       ),
     )
-    .orderBy(asc(cards.due))
-    .limit(limit);
+    // Learning/relearning first, then reviews, then new — matching priority().
+    .orderBy(
+      sql`case when ${cards.state} in (1, 3) then 0 when ${cards.state} = 2 then 1 else 2 end`,
+      asc(cards.due),
+    )
+    .limit(QUEUE_FETCH_CAP);
 
-  return spreadSiblings(rows).map((r) => ({
-    cardId: r.cardId,
-    kind: r.kind,
-    noteId: r.noteId,
-    markdown: serializeCard(r.noteType, r.fields, r.noteTags),
-    deckTitle: r.deckTitle,
-    topic: r.topic,
-    noteType: r.noteType,
-    fields: r.fields,
-    sched: {
-      due: r.due,
-      stability: r.stability,
-      difficulty: r.difficulty,
-      elapsedDays: r.elapsedDays,
-      scheduledDays: r.scheduledDays,
-      learningSteps: r.learningSteps,
-      reps: r.reps,
-      lapses: r.lapses,
-      state: r.state,
-      lastReview: r.lastReview,
-    },
-  }));
+  // Shuffle equally-urgent cards first, then trim to the session length, so a
+  // 10-card session is a random 10 of what's due rather than the same head.
+  return spreadSiblings(shufflePeers(rows))
+    .slice(0, limit)
+    .map((r) => ({
+      cardId: r.cardId,
+      kind: r.kind,
+      noteId: r.noteId,
+      markdown: serializeCard(r.noteType, r.fields, r.noteTags),
+      deckTitle: r.deckTitle,
+      topic: r.topic,
+      noteType: r.noteType,
+      fields: r.fields,
+      sched: {
+        due: r.due,
+        stability: r.stability,
+        difficulty: r.difficulty,
+        elapsedDays: r.elapsedDays,
+        scheduledDays: r.scheduledDays,
+        learningSteps: r.learningSteps,
+        reps: r.reps,
+        lapses: r.lapses,
+        state: r.state,
+        lastReview: r.lastReview,
+      },
+    }));
 }
 
 /** Re-read a note as a study queue card after it was edited — picks the same
