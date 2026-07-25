@@ -582,3 +582,23 @@
   .cmp-bad .cmp-label {
     color: var(--danger);
   }
+
+  /* Inline emphasis inside labels that are already bold: 600 → 700 barely
+     reads, so mark it with the brand color instead (as .pull2 strong does). */
+  .cmp-label strong,
+  .casc-k strong,
+  .casc-v strong {
+    color: var(--brand);
+  }
+  /* Where the label already carries its own color (tone columns, callout
+     labels, the highlighted last cascade node), recoloring would be
+     invisible or would overwrite the signal — underline instead. */
+  .cmp-good .cmp-label strong,
+  .cmp-bad .cmp-label strong,
+  .casc-node.last .casc-k strong,
+  .co-l strong {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1.5px;
+  }
