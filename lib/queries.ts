@@ -167,10 +167,50 @@ function spreadSiblings<T extends { noteId: string }>(list: T[]): T[] {
   return out;
 }
 
+/** Which vocab direction a review session is restricted to. */
+export type VocabDirection = "ru" | "en";
+
+export const DIRECTION_KIND: Record<VocabDirection, string> = {
+  ru: "vocab", // RU → EN
+  en: "vocab:en", // EN → RU
+};
+
+export function parseDirection(v: unknown): VocabDirection | undefined {
+  return v === "ru" || v === "en" ? v : undefined;
+}
+
+/** What a deck-scoped review needs to know before starting: whether the deck
+ *  is studied in both directions, and how many cards each has due. */
+export async function getDeckDirections(
+  deckId: string,
+  now: number = Date.now(),
+): Promise<{ title: string; bothWays: boolean; dueRu: number; dueEn: number } | null> {
+  const db = await getDb();
+  const d = (
+    await db
+      .select({ title: decks.title, bothWays: decks.bothWays })
+      .from(decks)
+      .where(eq(decks.id, deckId))
+      .limit(1)
+  )[0];
+  if (!d) return null;
+  const rows = await db
+    .select({ kind: cards.kind, due: cards.due })
+    .from(cards)
+    .where(eq(cards.deckId, deckId));
+  return {
+    title: d.title,
+    bothWays: d.bothWays,
+    dueRu: rows.filter((c) => c.kind === DIRECTION_KIND.ru && c.due <= now).length,
+    dueEn: rows.filter((c) => c.kind === DIRECTION_KIND.en && c.due <= now).length,
+  };
+}
+
 export async function getDueQueue(
   now: number = Date.now(),
   deckId?: string,
   limit = 200,
+  direction?: VocabDirection,
 ): Promise<QueueCard[]> {
   const db = await getDb();
   const rows = await db
@@ -198,9 +238,11 @@ export async function getDueQueue(
     .innerJoin(notes, eq(cards.noteId, notes.id))
     .innerJoin(decks, eq(cards.deckId, decks.id))
     .where(
-      deckId
-        ? and(lte(cards.due, now), eq(cards.deckId, deckId))
-        : lte(cards.due, now),
+      and(
+        lte(cards.due, now),
+        ...(deckId ? [eq(cards.deckId, deckId)] : []),
+        ...(direction ? [eq(cards.kind, DIRECTION_KIND[direction])] : []),
+      ),
     )
     .orderBy(asc(cards.due))
     .limit(limit);
@@ -327,6 +369,9 @@ export interface DeckDetail {
   bothWays: boolean;
   /** Whether the deck contains any vocab notes (the setting only applies then). */
   hasVocab: boolean;
+  /** Cards due in each vocab direction, for studying one direction at a time. */
+  dueRu: number;
+  dueEn: number;
   items: {
     id: string;
     noteType: NoteType;
@@ -353,7 +398,7 @@ export async function getDeckDetail(
     .where(eq(notes.deckId, deckId))
     .orderBy(asc(notes.createdAt));
   const cardRows = await db
-    .select({ noteId: cards.noteId, state: cards.state, due: cards.due })
+    .select({ noteId: cards.noteId, kind: cards.kind, state: cards.state, due: cards.due })
     .from(cards)
     .where(eq(cards.deckId, deckId));
 
@@ -380,6 +425,8 @@ export async function getDeckDetail(
     markdown: serializeDeck({ title: d.title, topic: d.topic, tags: d.tags }, notesLite),
     bothWays: d.bothWays,
     hasVocab: noteRows.some((n) => n.type === "vocab"),
+    dueRu: cardRows.filter((c) => c.kind === DIRECTION_KIND.ru && c.due <= now).length,
+    dueEn: cardRows.filter((c) => c.kind === DIRECTION_KIND.en && c.due <= now).length,
     items: noteRows.map((n) => {
       const cs = byNote.get(n.id) ?? [];
       let repState = 0;

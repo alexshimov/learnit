@@ -222,12 +222,30 @@ export function DeckManager({ detail }: { detail: DeckDetail }) {
       </header>
 
       <div className="flex flex-wrap gap-2">
-        <Link
-          href={`/review?deck=${detail.id}`}
-          className="btn-brand flex items-center gap-2 px-5 py-2.5 text-[14px]"
-        >
-          <Play size={15} /> Study{detail.due > 0 ? ` · ${detail.due}` : ""}
-        </Link>
+        {detail.bothWays && detail.hasVocab ? (
+          // One direction per session — mixing them gives the answer away.
+          <>
+            <Link
+              href={`/review?deck=${detail.id}&dir=ru`}
+              className="btn-brand flex items-center gap-2 px-5 py-2.5 text-[14px]"
+            >
+              <Play size={15} /> RU → EN{detail.dueRu > 0 ? ` · ${detail.dueRu}` : ""}
+            </Link>
+            <Link
+              href={`/review?deck=${detail.id}&dir=en`}
+              className="btn-brand flex items-center gap-2 px-5 py-2.5 text-[14px]"
+            >
+              <Play size={15} /> EN → RU{detail.dueEn > 0 ? ` · ${detail.dueEn}` : ""}
+            </Link>
+          </>
+        ) : (
+          <Link
+            href={`/review?deck=${detail.id}`}
+            className="btn-brand flex items-center gap-2 px-5 py-2.5 text-[14px]"
+          >
+            <Play size={15} /> Study{detail.due > 0 ? ` · ${detail.due}` : ""}
+          </Link>
+        )}
         <button
           onClick={() => fileRef.current?.click()}
           disabled={isPending}

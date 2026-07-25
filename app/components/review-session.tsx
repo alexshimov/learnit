@@ -19,7 +19,14 @@ const RATINGS = [
   { grade: Rating.Easy, label: "Easy", fg: "var(--accent)", bg: "var(--accent-bg)" },
 ] as const;
 
-export function ReviewSession({ queue }: { queue: QueueCard[] }) {
+export function ReviewSession({
+  queue,
+  directionLabel,
+}: {
+  queue: QueueCard[];
+  /** Set when the session is restricted to one vocab direction. */
+  directionLabel?: string;
+}) {
   const [cards, setCards] = useState(queue);
   const [index, setIndex] = useState(0);
   const [revealed, setRevealed] = useState(false);
@@ -268,7 +275,10 @@ export function ReviewSession({ queue }: { queue: QueueCard[] }) {
       ) : (
         <>
           <div className="flex flex-1 flex-col">
-            <div className="eyebrow2 mb-6">{current.deckTitle}</div>
+            <div className="eyebrow2 mb-6">
+              {current.deckTitle}
+              {directionLabel ? ` · ${directionLabel}` : ""}
+            </div>
             <CardFace
               noteType={current.noteType}
               fields={current.fields}
