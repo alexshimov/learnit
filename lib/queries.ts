@@ -179,6 +179,7 @@ export function parseDirection(v: unknown): VocabDirection | undefined {
   return v === "ru" || v === "en" ? v : undefined;
 }
 
+
 /** What a deck-scoped review needs to know before starting: whether the deck
  *  is studied in both directions, and how many cards each has due. */
 export async function getDeckDirections(
