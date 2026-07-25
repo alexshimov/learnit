@@ -57,7 +57,12 @@ export function noteHash(type: NoteType, fields: NoteFields): string {
   return createHash("sha1").update(canonical).digest("hex");
 }
 
-async function insertNote(deckId: string, note: ParsedNote, now: number): Promise<number> {
+async function insertNote(
+  deckId: string,
+  note: ParsedNote,
+  now: number,
+  bothWays = false,
+): Promise<number> {
   const db = await getDb();
   const noteId = randomUUID();
   await db.insert(notes).values({
@@ -70,7 +75,7 @@ async function insertNote(deckId: string, note: ParsedNote, now: number): Promis
     createdAt: now,
   });
   let count = 0;
-  for (const kind of cardKinds(note)) {
+  for (const kind of cardKinds(note, bothWays)) {
     await db.insert(cards).values({
       id: randomUUID(),
       noteId,
@@ -180,7 +185,7 @@ export async function appendToDeck(
       continue;
     }
     have.add(h);
-    await insertNote(deckId, note, now);
+    await insertNote(deckId, note, now, deckRow.bothWays);
     added++;
   }
   return { ok: true, added, skipped, markdown: await serializeCurrentDeck(deckId) };
@@ -232,7 +237,7 @@ export async function replaceDeckContent(
       await db.update(notes).set({ fields: note.fields, tags: note.tags }).where(eq(notes.id, existingId));
       kept++;
     } else {
-      await insertNote(deckId, note, now);
+      await insertNote(deckId, note, now, deckRow.bothWays);
       added++;
     }
   }
@@ -278,7 +283,7 @@ export async function addCardToDeck(
   const now = Date.now();
   let added = 0;
   for (const note of parsed.notes) {
-    await insertNote(deckId, note, now);
+    await insertNote(deckId, note, now, deckRow.bothWays);
     added++;
   }
   return { ok: true, added };
@@ -305,7 +310,14 @@ export async function updateCard(
     .set({ type: note.type, fields: note.fields, tags: note.tags })
     .where(eq(notes.id, noteId));
 
-  const desiredKinds = cardKinds(note);
+  const deckRow = (
+    await db
+      .select({ bothWays: decks.bothWays })
+      .from(decks)
+      .where(eq(decks.id, noteRow.deckId))
+      .limit(1)
+  )[0];
+  const desiredKinds = cardKinds(note, deckRow?.bothWays ?? false);
   const existingCards = await db
     .select({ id: cards.id, kind: cards.kind })
     .from(cards)

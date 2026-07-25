@@ -18,15 +18,26 @@ export function clozeNumbers(text: string): number[] {
   return [...nums].sort((a, b) => a - b);
 }
 
-/** The card "kinds" a note expands into (one review card per kind). */
-export function cardKinds(note: ParsedNote): string[] {
-  if (note.type === "vocab") return ["vocab"];
+/**
+ * The card "kinds" a note expands into (one review card per kind).
+ *
+ * `bothWays` adds the reverse direction for vocab notes. The recall
+ * direction (RU → EN) keeps the bare "vocab" kind it has always had, so
+ * turning the setting on or off never disturbs its scheduling.
+ */
+export function cardKinds(note: ParsedNote, bothWays = false): string[] {
+  if (note.type === "vocab") return bothWays ? ["vocab", "vocab:en"] : ["vocab"];
   if (note.type === "cloze") {
     return clozeNumbers((note.fields as ClozeFields).text).map((n) => `cloze:${n}`);
   }
   const kinds = ["forward"];
   if ((note.fields as BasicFields).reverse) kinds.push("reverse");
   return kinds;
+}
+
+/** True when a vocab card shows the English side as the prompt (EN → RU). */
+export function isVocabReverse(kind: string): boolean {
+  return kind === "vocab:en";
 }
 
 /**
@@ -41,7 +52,7 @@ export function renderCard(
 ): RenderedCard {
   if (type === "vocab") {
     const f = fields as VocabFields;
-    return { front: f.ru, back: f.en };
+    return isVocabReverse(kind) ? { front: f.en, back: f.ru } : { front: f.ru, back: f.en };
   }
   if (type === "cloze") {
     const { text } = fields as ClozeFields;

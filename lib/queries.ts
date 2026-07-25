@@ -147,6 +147,26 @@ export interface QueueCard {
   };
 }
 
+/**
+ * Keep two cards of the same note apart in the queue. Both directions of a
+ * word are created together and so fall due together — showing them
+ * back-to-back would give the answer away on the second one.
+ */
+function spreadSiblings<T extends { noteId: string }>(list: T[]): T[] {
+  const out: T[] = [];
+  const pending = [...list];
+  while (pending.length) {
+    let i = 0;
+    if (out.length) {
+      const prev = out[out.length - 1].noteId;
+      const alt = pending.findIndex((c) => c.noteId !== prev);
+      if (alt !== -1) i = alt;
+    }
+    out.push(pending.splice(i, 1)[0]);
+  }
+  return out;
+}
+
 export async function getDueQueue(
   now: number = Date.now(),
   deckId?: string,
@@ -185,7 +205,7 @@ export async function getDueQueue(
     .orderBy(asc(cards.due))
     .limit(limit);
 
-  return rows.map((r) => ({
+  return spreadSiblings(rows).map((r) => ({
     cardId: r.cardId,
     kind: r.kind,
     noteId: r.noteId,
@@ -218,7 +238,14 @@ export async function getStudyCardByNote(
   const db = await getDb();
   const n = (await db.select().from(notes).where(eq(notes.id, noteId)).limit(1))[0];
   if (!n) return null;
-  const kinds = cardKinds({ type: n.type, fields: n.fields, tags: n.tags });
+  const deckRow = (
+    await db
+      .select({ title: decks.title, topic: decks.topic, bothWays: decks.bothWays })
+      .from(decks)
+      .where(eq(decks.id, n.deckId))
+      .limit(1)
+  )[0];
+  const kinds = cardKinds({ type: n.type, fields: n.fields, tags: n.tags }, deckRow?.bothWays);
   const kind = kinds.includes(preferKind) ? preferKind : kinds[0];
   if (!kind) return null;
   const c = (
@@ -229,20 +256,13 @@ export async function getStudyCardByNote(
       .limit(1)
   )[0];
   if (!c) return null;
-  const d = (
-    await db
-      .select({ title: decks.title, topic: decks.topic })
-      .from(decks)
-      .where(eq(decks.id, n.deckId))
-      .limit(1)
-  )[0];
   return {
     cardId: c.id,
     kind,
     noteId: n.id,
     markdown: serializeCard(n.type, n.fields, n.tags),
-    deckTitle: d?.title ?? "",
-    topic: d?.topic ?? null,
+    deckTitle: deckRow?.title ?? "",
+    topic: deckRow?.topic ?? null,
     noteType: n.type,
     fields: n.fields,
     sched: {
@@ -303,6 +323,10 @@ export interface DeckDetail {
   total: number;
   due: number;
   markdown: string;
+  /** Vocab notes also generate a reverse (EN → RU) card. */
+  bothWays: boolean;
+  /** Whether the deck contains any vocab notes (the setting only applies then). */
+  hasVocab: boolean;
   items: {
     id: string;
     noteType: NoteType;
@@ -354,6 +378,8 @@ export async function getDeckDetail(
     total: cardRows.length,
     due: cardRows.filter((c) => c.due <= now).length,
     markdown: serializeDeck({ title: d.title, topic: d.topic, tags: d.tags }, notesLite),
+    bothWays: d.bothWays,
+    hasVocab: noteRows.some((n) => n.type === "vocab"),
     items: noteRows.map((n) => {
       const cs = byNote.get(n.id) ?? [];
       let repState = 0;
@@ -376,7 +402,7 @@ export async function getDeckDetail(
         id: n.id,
         noteType: n.type,
         fields: n.fields,
-        kinds: cardKinds({ type: n.type, fields: n.fields, tags: n.tags }),
+        kinds: cardKinds({ type: n.type, fields: n.fields, tags: n.tags }, d.bothWays),
         summary: noteSummary(n.type, n.fields),
         markdown: serializeCard(n.type, n.fields, n.tags),
         srState,

@@ -1,4 +1,4 @@
-import { renderCard } from "@/lib/cards";
+import { renderCard, isVocabReverse } from "@/lib/cards";
 import { CardContent } from "@/app/components/card-content";
 import { VocabBack } from "@/app/components/vocab-card";
 import type { NoteType, NoteFields, VocabFields } from "@/lib/types";
@@ -22,13 +22,14 @@ export function CardFace({
 
   if (noteType === "vocab") {
     const f = fields as VocabFields;
+    const reverse = isVocabReverse(kind);
     return (
       <>
-        <div className="q-prompt">{f.ru}</div>
+        <div className="q-prompt">{reverse ? f.en : f.ru}</div>
         {showBack && (
           <>
             {divider}
-            <VocabBack fields={f} />
+            <VocabBack fields={f} reverse={reverse} />
           </>
         )}
       </>

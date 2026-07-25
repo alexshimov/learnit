@@ -1,0 +1,1 @@
+ALTER TABLE "decks" ADD COLUMN "both_ways" boolean DEFAULT false NOT NULL;

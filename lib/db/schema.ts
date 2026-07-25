@@ -1,4 +1,13 @@
-import { pgTable, text, integer, real, bigint, jsonb, index } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  integer,
+  real,
+  bigint,
+  jsonb,
+  boolean,
+  index,
+} from "drizzle-orm/pg-core";
 import type { NoteFields, NoteType } from "../types";
 
 // Millisecond epoch timestamps must be bigint — a Postgres `integer` is 32-bit
@@ -18,6 +27,8 @@ export const decks = pgTable("decks", {
   tags: jsonb("tags").$type<string[]>().notNull().default([]),
   folderId: text("folder_id").references(() => folders.id, { onDelete: "set null" }),
   sortOrder: integer("sort_order").notNull().default(0),
+  // Vocab notes in this deck also get a reverse (EN → RU) card.
+  bothWays: boolean("both_ways").notNull().default(false),
   createdAt: ts("created_at").notNull(),
 });
 

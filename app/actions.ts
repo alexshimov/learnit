@@ -24,6 +24,7 @@ import {
   renameFolder,
   deleteFolder,
   organizeDecks,
+  setDeckBothWays,
 } from "@/lib/organize";
 import { applyRating, type Grade, type Sched } from "@/lib/fsrs";
 
@@ -125,6 +126,21 @@ export async function deleteCardAction(
   revalidatePath("/decks");
   revalidatePath(`/decks/${result.deckId}`);
   return { ok: true };
+}
+
+export async function setDeckBothWaysAction(
+  deckId: string,
+  bothWays: boolean,
+): Promise<{ ok: true; added: number; removed: number } | { ok: false }> {
+  const input = z
+    .object({ deckId: z.string().min(1), bothWays: z.boolean() })
+    .safeParse({ deckId, bothWays });
+  if (!input.success) return { ok: false };
+  const r = await setDeckBothWays(input.data.deckId, input.data.bothWays);
+  revalidatePath("/");
+  revalidatePath("/decks");
+  revalidatePath(`/decks/${input.data.deckId}`);
+  return { ok: true, ...r };
 }
 
 export async function updateStudyCardAction(

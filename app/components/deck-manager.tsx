@@ -13,10 +13,13 @@ import {
   addCardAction,
   updateCardAction,
   deleteCardAction,
+  setDeckBothWaysAction,
 } from "@/app/actions";
 
 function kindLabel(kind: string): string {
   if (kind === "reverse") return "Back → front";
+  if (kind === "vocab") return "RU → EN";
+  if (kind === "vocab:en") return "EN → RU";
   if (kind.startsWith("cloze:")) return `Cloze ${kind.split(":")[1]}`;
   return "Front → back";
 }
@@ -147,6 +150,22 @@ export function DeckManager({ detail }: { detail: DeckDetail }) {
     });
   }
 
+  function toggleBothWays() {
+    const next = !detail.bothWays;
+    setMsg(null);
+    start(async () => {
+      const r = await setDeckBothWaysAction(detail.id, next);
+      if (!r.ok) return;
+      setMsg({
+        kind: "ok",
+        text: next
+          ? `Both directions on — added ${r.added} EN → RU card${r.added === 1 ? "" : "s"}.`
+          : `Both directions off — removed ${r.removed} EN → RU card${r.removed === 1 ? "" : "s"}.`,
+      });
+      router.refresh();
+    });
+  }
+
   const cardEditor = (
     <div className="flex flex-col gap-2">
       <textarea
@@ -231,6 +250,36 @@ export function DeckManager({ detail }: { detail: DeckDetail }) {
           onChange={onFile}
         />
       </div>
+
+      {detail.hasVocab && (
+        <div
+          className="flex items-center justify-between gap-3 rounded-xl px-3.5 py-3"
+          style={{ background: "var(--surface-1)", border: "0.5px solid var(--border)" }}
+        >
+          <div className="min-w-0">
+            <p className="text-[14px] font-medium">Study both directions</p>
+            <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>
+              Adds an EN → RU card next to each RU → EN one, scheduled separately.
+            </p>
+          </div>
+          <button
+            role="switch"
+            aria-checked={detail.bothWays}
+            aria-label="Study both directions"
+            onClick={toggleBothWays}
+            disabled={isPending}
+            className="relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50"
+            style={{
+              background: detail.bothWays ? "var(--brand)" : "var(--border-strong)",
+            }}
+          >
+            <span
+              className="absolute top-0.5 h-5 w-5 rounded-full transition-all"
+              style={{ background: "#fff", left: detail.bothWays ? "1.375rem" : "0.125rem" }}
+            />
+          </button>
+        </div>
+      )}
 
       {msg && (
         <div

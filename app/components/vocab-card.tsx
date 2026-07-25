@@ -11,14 +11,21 @@ function splitList(v?: string): string[] {
     .filter(Boolean);
 }
 
-export function VocabBack({ fields }: { fields: VocabFields }) {
+export function VocabBack({
+  fields,
+  reverse = false,
+}: {
+  fields: VocabFields;
+  /** EN → RU: the Russian is the answer, so it leads. */
+  reverse?: boolean;
+}) {
   const antonyms = splitList(fields.antonyms);
   const related = splitList(fields.related);
 
   return (
     <div>
-      <div className="vocab-answer">{fields.en}</div>
-      <p className="vocab-ru">{fields.ru}</p>
+      <div className="vocab-answer">{reverse ? fields.ru : fields.en}</div>
+      <p className="vocab-ru">{reverse ? fields.en : fields.ru}</p>
 
       {fields.usage && (
         <div className="field">
