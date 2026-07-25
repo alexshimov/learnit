@@ -4,8 +4,25 @@ import {
   getDecksPageData,
   getStreak,
   getReviewedTodayCount,
+  getLastStudiedMap,
   type DeckOverview,
 } from "@/lib/queries";
+
+/** How many recently-studied decks to offer picking back up. */
+const CONTINUE_COUNT = 3;
+
+/** Compact "how long ago", for the last time a deck was studied. */
+function agoLabel(then: number, now: number): string {
+  const mins = Math.round((now - then) / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.round(hours / 24);
+  if (days === 1) return "yesterday";
+  if (days < 30) return `${days}d ago`;
+  return `${Math.round(days / 30)}mo ago`;
+}
 
 export const dynamic = "force-dynamic";
 
@@ -23,11 +40,19 @@ function deckIcon(topic: string | null) {
 
 export default async function TodayPage() {
   const now = Date.now();
-  const [{ decks, folders }, streak, reviewedToday] = await Promise.all([
+  const [{ decks, folders }, streak, reviewedToday, lastStudied] = await Promise.all([
     getDecksPageData(now),
     getStreak(now),
     getReviewedTodayCount(now),
+    getLastStudiedMap(),
   ]);
+
+  // Decks you were last working on that still have cards waiting — a deck
+  // you've finished for now isn't worth offering.
+  const continueDecks = decks
+    .filter((d) => d.due > 0 && lastStudied.has(d.id))
+    .sort((a, b) => lastStudied.get(b.id)! - lastStudied.get(a.id)!)
+    .slice(0, CONTINUE_COUNT);
 
   const anyGrouped = decks.some((d) => d.folderId != null);
   const sections = anyGrouped
@@ -124,6 +149,25 @@ export default async function TodayPage() {
             )}
           </section>
 
+          {continueDecks.length > 0 && (
+            <section className="flex flex-col gap-2">
+              <div className="flex items-center gap-2 px-1">
+                <Play size={13} style={{ color: "var(--brand)" }} />
+                <span className="eyebrow2">Pick up where you left off</span>
+              </div>
+              <div className="card overflow-hidden">
+                {continueDecks.map((deck, i) => (
+                  <DeckRow
+                    key={deck.id}
+                    deck={deck}
+                    first={i === 0}
+                    note={agoLabel(lastStudied.get(deck.id)!, now)}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
           {anyGrouped ? (
             <section className="flex flex-col gap-4">
               {sections.map((s) => (
@@ -161,7 +205,16 @@ export default async function TodayPage() {
   );
 }
 
-function DeckRow({ deck, first }: { deck: DeckOverview; first: boolean }) {
+function DeckRow({
+  deck,
+  first,
+  note,
+}: {
+  deck: DeckOverview;
+  first: boolean;
+  /** Extra context for this row, e.g. when the deck was last studied. */
+  note?: string;
+}) {
   const Icon = deckIcon(deck.topic);
   return (
     <Link
@@ -178,7 +231,7 @@ function DeckRow({ deck, first }: { deck: DeckOverview; first: boolean }) {
       <div className="min-w-0 flex-1">
         <p className="truncate text-[14px] font-medium">{deck.title}</p>
         <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>
-          {deck.topic ? `${deck.topic} · ` : ""}
+          {note ? `${note} · ` : deck.topic ? `${deck.topic} · ` : ""}
           {deck.total} card{deck.total === 1 ? "" : "s"}
         </p>
       </div>

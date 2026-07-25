@@ -328,6 +328,18 @@ function dayKey(ms: number): string {
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 }
 
+/** When each deck was last reviewed, keyed by deck id. Used to offer the
+ *  decks you were working on most recently. */
+export async function getLastStudiedMap(): Promise<Map<string, number>> {
+  const db = await getDb();
+  const rows = await db
+    .select({ deckId: cards.deckId, last: sql<number>`max(${reviews.reviewedAt})` })
+    .from(reviews)
+    .innerJoin(cards, eq(reviews.cardId, cards.id))
+    .groupBy(cards.deckId);
+  return new Map(rows.map((r) => [r.deckId, Number(r.last)]));
+}
+
 export async function getStreak(now: number = Date.now()): Promise<number> {
   const db = await getDb();
   const rows = await db.select({ reviewedAt: reviews.reviewedAt }).from(reviews);
