@@ -66,6 +66,11 @@ function parseVocab(block: string): ParsedNote {
       case "usage":
         fields.usage = val;
         break;
+      case "use_when":
+      case "usewhen":
+      case "when":
+        fields.useWhen = val;
+        break;
       case "example":
       case "examples":
         if (val) examples.push(val);

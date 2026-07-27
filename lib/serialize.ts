@@ -34,6 +34,7 @@ export function serializeCard(
     lines.push(`en: ${f.en}`);
     lines.push(`ru: ${f.ru}`);
     if (f.usage) lines.push(`usage: ${f.usage}`);
+    if (f.useWhen) lines.push(`use_when: ${f.useWhen}`);
     for (const ex of f.examples ?? []) lines.push(`example: ${ex}`);
     if (f.antonyms) lines.push(`antonyms: ${f.antonyms}`);
     if (f.related) lines.push(`related: ${f.related}`);

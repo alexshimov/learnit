@@ -119,6 +119,7 @@ For each word output ONE block (no Q:/A:, no --- inside the block):
 en: the English word or phrase
 ru: Russian translation(s) — this is the prompt side I see first
 usage: one line on meaning / register / when to use it
+use_when: (optional) when to pick this word over its near-synonyms
 example: an English sentence using the word in **bold**
 example: a second example
 antonyms: comma-separated, or — if there are none

@@ -37,6 +37,16 @@ export function VocabBack({
         </div>
       )}
 
+      {fields.useWhen && (
+        <div className="field">
+          <span className="field-label">Use when</span>
+          <div
+            className="field-body usewhen"
+            dangerouslySetInnerHTML={{ __html: mdToHtml(fields.useWhen) }}
+          />
+        </div>
+      )}
+
       {fields.examples && fields.examples.length > 0 && (
         <div className="field">
           <span className="field-label">Examples</span>

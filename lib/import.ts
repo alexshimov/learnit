@@ -33,7 +33,10 @@ function chunk<T>(arr: T[], size = 400): T[][] {
 }
 
 /** Stable content identity of a note — used to dedup and to preserve FSRS
- *  state for a card whose learnable content is unchanged. Tags are excluded. */
+ *  state for a card whose learnable content is unchanged. Tags are excluded,
+ *  and so is a vocab note's `use_when`: it is a later annotation, so adding it
+ *  to a deck already in rotation enriches those cards instead of resetting
+ *  their scheduling (kept notes have their fields refreshed on re-import). */
 export function noteHash(type: NoteType, fields: NoteFields): string {
   let canonical: string;
   if (type === "vocab") {

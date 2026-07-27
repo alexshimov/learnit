@@ -16,6 +16,8 @@ export interface VocabFields {
   en: string;
   ru: string;
   usage?: string;
+  /** When to reach for this word rather than a near-synonym (`use_when:`). */
+  useWhen?: string;
   examples?: string[];
   antonyms?: string;
   related?: string;
